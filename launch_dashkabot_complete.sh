@@ -24,7 +24,6 @@ else
 fi
 
 # Проверяем все необходимые файлы
-FILES=("ai_server_node.js" "simple_web_server.js" "simple_websocket_server.js" "unifiedTranslationService.js" "package.json")
 for file in "${FILES[@]}"; do
     if [ -f "$file" ]; then
         echo "✅ $file найден"
@@ -38,7 +37,6 @@ echo ""
 
 # Останавливаем существующие процессы
 echo "🛑 Остановка существующих процессов..."
-pkill -f "node ai_server_node.js" 2>/dev/null || true
 pkill -f "node simple_web_server.js" 2>/dev/null || true  
 pkill -f "node simple_websocket_server.js" 2>/dev/null || true
 pkill -f "dashkabot" 2>/dev/null || true
@@ -68,7 +66,6 @@ echo ""
 
 # 1. Запуск AI Server
 echo "🤖 Запуск AI Server на порту 8080..."
-nohup node ai_server_node.js > logs/ai_server.log 2>&1 &
 AI_PID=$!
 sleep 3
 

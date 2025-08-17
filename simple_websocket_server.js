@@ -9,7 +9,7 @@ class SimpleWebSocketServer {
     }
 
     setupServer() {
-        this.wss = new WebSocket.Server({ port: this.port });
+        this.wss = new WebSocket.Server({ port: this.port, host: "172.20.10.4" });
         
         this.wss.on('connection', (ws, request) => {
             const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

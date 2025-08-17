@@ -1,13 +1,15 @@
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
 const express = require('express');
+const path = require('path');
+const http = require('http');
 
 const app = express();
+const PORT = 8090;
+const MOBILE_IP = '172.20.10.4';
+
+app.use(express.static('dashkabot_web'));
 app.use(express.json());
 
-// CORS для всех запросов
+// CORS для мобильного
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -19,16 +21,14 @@ app.use((req, res, next) => {
     }
 });
 
-// Проксирование API запросов к AI серверу
+// ✅ ИСПРАВЛЕННОЕ проксирование к AI серверу 
 app.use('/api', (req, res) => {
     const options = {
-        hostname: 'localhost',
+        hostname: MOBILE_IP,  // ✅ Теперь на мобильном IP!
         port: 8080,
-        path: req.originalUrl,
+        path: req.originalUrl.replace('/api', ''),
         method: req.method,
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     };
 
     const proxyReq = http.request(options, (proxyRes) => {
@@ -40,8 +40,8 @@ app.use('/api', (req, res) => {
     });
 
     proxyReq.on('error', (err) => {
-        console.error('API Proxy error:', err);
-        res.status(500).json({ error: 'AI сервер недоступен' });
+        console.error('📱 Mobile API Proxy error:', err);
+        res.status(500).json({ error: 'AI сервер недоступен для мобильного' });
     });
 
     if (req.body && Object.keys(req.body).length > 0) {
@@ -50,21 +50,12 @@ app.use('/api', (req, res) => {
     proxyReq.end();
 });
 
-// Статические файлы
-app.use(express.static('dashkabot_web'));
-
-// Главная страница
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'dashkabot_web', 'index.html'));
 });
 
-// HTTPS сервер
-const options = {
-    key: fs.readFileSync('ssl/key.pem'),
-    cert: fs.readFileSync('ssl/cert.pem')
-};
-
-https.createServer(options, app).listen(8443, '0.0.0.0', () => {
-    console.log('🔒 DashkaBot HTTPS сервер запущен на https://172.20.10.4:8443');
-    console.log('🎤 Микрофон будет работать через HTTPS');
+app.listen(PORT, MOBILE_IP, () => {
+    console.log(`📱 Mobile Web сервер на http://${MOBILE_IP}:${PORT}`);
+    console.log(`🔗 API прокси на http://${MOBILE_IP}:8080`);
+    console.log(`🎯 APK готов к подключению!`);
 });

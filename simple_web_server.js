@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const http = require('http');
 
 const app = express();
 const PORT = 8090;
@@ -18,34 +17,6 @@ app.use((req, res, next) => {
     } else {
         next();
     }
-});
-
-// Проксирование к AI серверу
-app.use('/api', (req, res) => {
-    const options = {
-        hostname: 'localhost',
-        port: 8080,
-        path: req.originalUrl.replace('/api', ''),
-        method: req.method,
-        headers: { 'Content-Type': 'application/json' }
-    };
-
-    const proxyReq = http.request(options, (proxyRes) => {
-        res.status(proxyRes.statusCode);
-        Object.keys(proxyRes.headers).forEach(key => {
-            res.setHeader(key, proxyRes.headers[key]);
-        });
-        proxyRes.pipe(res);
-    });
-
-    proxyReq.on('error', (err) => {
-        res.status(500).json({ error: 'AI сервер недоступен' });
-    });
-
-    if (req.body && Object.keys(req.body).length > 0) {
-        proxyReq.write(JSON.stringify(req.body));
-    }
-    proxyReq.end();
 });
 
 app.get('/', (req, res) => {
