@@ -78,10 +78,65 @@
             margin-bottom: 15px;
             min-height: 24px;
         }
+
+        /* Новое: текстовое поле для ввода */
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .text-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
         
         .controls {
             text-align: center;
             margin-top: 30px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .btn-translate {
+            background: #28a745;
+        }
+        
+        .btn-clear {
+            background: #6c757d;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .record-btn {
@@ -148,6 +203,39 @@
 
         .connected { background: #2ecc71; }
         .disconnected { background: #e74c3c; }
+
+        /* Режимы работы */
+        .mode-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 5px;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: white;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mode-tab.active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .mode-content {
+            display: none;
+        }
+        
+        .mode-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -166,23 +254,50 @@
             </button>
         </div>
         
+        <!-- Режимы работы -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="switchMode('text')">📝 Текст</button>
+            <button class="mode-tab" onclick="switchMode('voice')">🎤 Голос</button>
+        </div>
+        
         <div class="status" id="status">
             🟢 DashkaBot готов к работе
         </div>
         
+        <!-- Режим текстового ввода -->
+        <div id="textMode" class="mode-content active">
+            <textarea 
+                id="textInput" 
+                class="text-input" 
+                placeholder="Введите текст для перевода..."
+            ></textarea>
+            
+            <div class="btn-group">
+                <button class="btn btn-translate" id="translateBtn" onclick="translateText()">
+                    🔄 Перевести
+                </button>
+                <button class="btn btn-clear" onclick="clearText()">
+                    🗑️ Очистить
+                </button>
+            </div>
+        </div>
+        
+        <!-- Режим голосового ввода -->
+        <div id="voiceMode" class="mode-content">
+            <div class="controls">
+                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                    🎤
+                </button>
+                <div class="instruction">Нажмите для записи</div>
+            </div>
+        </div>
+        
         <div class="translation-area">
             <div class="label">Исходный текст:</div>
-            <div class="text" id="originalText">Нажмите на микрофон и говорите...</div>
+            <div class="text" id="originalText">Введите текст или нажмите на микрофон...</div>
             
             <div class="label">Перевод:</div>
             <div class="text" id="translatedText">Перевод появится здесь...</div>
-        </div>
-        
-        <div class="controls">
-            <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
-                🎤
-            </button>
-            <div class="instruction">Нажмите для записи</div>
         </div>
         
         <div class="device-info">
@@ -211,6 +326,7 @@
         let isRecording = false;
         let recognition = null;
         let websocket = null;
+        let currentMode = 'text';
         
         // Конфигурация серверов
         const config = {
@@ -226,6 +342,106 @@
             initWebSocket();
             initSpeechRecognition();
             setRole('user');
+            switchMode('text');
+        }
+
+        // Переключение режимов
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Обновляем вкладки
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+            
+            if (mode === 'text') {
+                document.querySelector('.mode-tab:first-child').classList.add('active');
+                document.getElementById('textMode').classList.add('active');
+            } else {
+                document.querySelector('.mode-tab:last-child').classList.add('active');
+                document.getElementById('voiceMode').classList.add('active');
+            }
+        }
+
+        // Текстовый перевод
+        async function translateText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                updateStatus('❌ Введите текст для перевода');
+                return;
+            }
+
+            const translateBtn = document.getElementById('translateBtn');
+            translateBtn.disabled = true;
+            translateBtn.textContent = '⏳ Переводим...';
+            
+            // Отображаем исходный текст
+            document.getElementById('originalText').textContent = text;
+            updateStatus('🔄 Перевожу...');
+            
+            try {
+                // Определение направления перевода
+                const fromLang = currentRole === 'user' ? 'RU' : 'DE';
+                const toLang = currentRole === 'user' ? 'DE' : 'RU';
+                
+                // Отправка на AI сервер
+                const response = await fetch(`${config.aiServer}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_language: fromLang,
+                        target_language: toLang
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`AI Server error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                const translation = result.translated_text || '[Ошибка перевода]';
+                
+                // Отображение результата
+                document.getElementById('translatedText').textContent = translation;
+                updateStatus(`✅ Переведено! (${fromLang} → ${toLang})`);
+                
+                // Синтез речи
+                if (config.enableSpeech && 'speechSynthesis' in window) {
+                    speakTranslation(translation, toLang.toLowerCase());
+                }
+                
+                // Отправка через WebSocket
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    const wsMessage = {
+                        type: 'translation',
+                        role: currentRole,
+                        original: text,
+                        translation: translation,
+                        from: fromLang.toLowerCase(),
+                        to: toLang.toLowerCase(),
+                        timestamp: new Date().toISOString()
+                    };
+                    websocket.send(JSON.stringify(wsMessage));
+                }
+                
+            } catch (error) {
+                console.error('Translation error:', error);
+                updateStatus('❌ Ошибка перевода: ' + error.message);
+                document.getElementById('translatedText').textContent = 'Ошибка: ' + error.message;
+            } finally {
+                translateBtn.disabled = false;
+                translateBtn.textContent = '🔄 Перевести';
+            }
+        }
+
+        // Очистка текста
+        function clearText() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('originalText').textContent = 'Введите текст или нажмите на микрофон...';
+            document.getElementById('translatedText').textContent = 'Перевод появится здесь...';
+            updateStatus('🟢 DashkaBot готов к работе');
         }
 
         // Проверка AI сервера
@@ -392,7 +608,7 @@
             }
         }
         
-        // Обработка записанного текста
+        // Обработка записанного текста (используем тот же код что и для текстового ввода)
         async function processRecording(text) {
             if (!text.trim()) {
                 updateStatus('❌ Текст не распознан');
@@ -403,11 +619,9 @@
             updateStatus('🔄 Перевожу...');
             
             try {
-                // Определение направления перевода
-                const fromLang = currentRole === 'user' ? 'ru' : 'de';
-                const toLang = currentRole === 'user' ? 'de' : 'ru';
+                const fromLang = currentRole === 'user' ? 'RU' : 'DE';
+                const toLang = currentRole === 'user' ? 'DE' : 'RU';
                 
-                // Отправка на AI сервер
                 const response = await fetch(`${config.aiServer}/translate`, {
                     method: 'POST',
                     headers: {
@@ -415,9 +629,8 @@
                     },
                     body: JSON.stringify({
                         text: text,
-                        from: fromLang,
-                        to: toLang,
-                        context: 'steuerberater_consultation'
+                        source_language: fromLang,
+                        target_language: toLang
                     })
                 });
                 
@@ -426,32 +639,28 @@
                 }
                 
                 const result = await response.json();
-                const translation = result.translation || result.text || '[Ошибка перевода]';
+                const translation = result.translated_text || '[Ошибка перевода]';
                 
-                // Отображение результата
                 document.getElementById('translatedText').textContent = translation;
                 updateStatus('✅ Готово!');
                 
-                // Синтез речи
                 if (config.enableSpeech && 'speechSynthesis' in window) {
-                    speakTranslation(translation, toLang);
+                    speakTranslation(translation, toLang.toLowerCase());
                 }
                 
-                // Отправка через WebSocket
                 if (websocket && websocket.readyState === WebSocket.OPEN) {
                     const wsMessage = {
                         type: 'translation',
                         role: currentRole,
                         original: text,
                         translation: translation,
-                        from: fromLang,
-                        to: toLang,
+                        from: fromLang.toLowerCase(),
+                        to: toLang.toLowerCase(),
                         timestamp: new Date().toISOString()
                     };
                     websocket.send(JSON.stringify(wsMessage));
                 }
                 
-                // Автосброс через 3 секунды
                 setTimeout(() => {
                     updateStatus('🎤 Готов к записи');
                 }, 3000);
@@ -462,7 +671,6 @@
                 document.getElementById('translatedText').textContent = 
                     'Ошибка: ' + error.message;
                 
-                // Возврат к готовности через 3 секунды
                 setTimeout(() => {
                     updateStatus('🎤 Готов к записи');
                 }, 3000);
@@ -473,7 +681,6 @@
         function speakTranslation(text, language) {
             if (!('speechSynthesis' in window)) return;
             
-            // Остановка предыдущего синтеза
             speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
@@ -500,7 +707,6 @@
         // Обработка WebSocket сообщений
         function handleWebSocketMessage(data) {
             if (data.type === 'translation' && data.role !== currentRole) {
-                // Показать перевод от другого участника
                 document.getElementById('originalText').textContent = 
                     `[${data.role}]: ${data.original}`;
                 document.getElementById('translatedText').textContent = data.translation;
@@ -539,6 +745,18 @@
         setInterval(() => {
             checkAIServer();
         }, 10000);
+
+        // Enter для перевода в текстовом режиме
+        document.addEventListener('DOMContentLoaded', function() {
+            const textInput = document.getElementById('textInput');
+            if (textInput) {
+                textInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                        translateText();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

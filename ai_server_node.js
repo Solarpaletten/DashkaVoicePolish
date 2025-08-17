@@ -3,7 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { UnifiedTranslationService } = require('./UnifiedTranslationService');
+const { UnifiedTranslationService } = require('./unifiedTranslationService');
 
 class DashkaBotNodeServer {
   constructor() {
@@ -62,8 +62,14 @@ class DashkaBotNodeServer {
         const { 
           text, 
           source_language = 'RU', 
-          target_language = 'DE' 
+          target_language = 'DE',
+          from = 'RU',
+          to = 'DE'
         } = req.body;
+
+        // Поддержка разных форматов параметров
+        const fromLang = source_language || from;
+        const toLang = target_language || to;
 
         if (!text || text.trim() === '') {
           return res.status(400).json({
@@ -71,10 +77,10 @@ class DashkaBotNodeServer {
           });
         }
 
-        console.log(`📥 Запрос #${this.requestCount}: "${text}" (${source_language} → ${target_language})`);
+        console.log(`📥 Запрос #${this.requestCount}: "${text}" (${fromLang} → ${toLang})`);
 
         // Проверяем кэш
-        const cacheKey = `${text.trim()}_${source_language}_${target_language}`;
+        const cacheKey = `${text.trim()}_${fromLang}_${toLang}`;
         if (this.translationCache.has(cacheKey)) {
           const cached = this.translationCache.get(cacheKey);
           console.log('🔄 Перевод из кэша');
@@ -85,9 +91,9 @@ class DashkaBotNodeServer {
           });
         }
 
-        // Нормализуем коды языков (DashkaBot использует ru/de, а наш сервис RU/DE)
-        const sourceCode = source_language.toUpperCase();
-        const targetCode = target_language.toUpperCase();
+        // Нормализуем коды языков
+        const sourceCode = fromLang.toUpperCase();
+        const targetCode = toLang.toUpperCase();
 
         // Выполняем перевод
         const result = await this.translationService.translateText(
@@ -151,25 +157,25 @@ class DashkaBotNodeServer {
           target_language.toUpperCase()
         );
 
-        // Отправляем аудио файл
-        if (fs.existsSync(result.translatedAudio)) {
-          res.json({
-            original_text: result.originalText,
-            translated_text: result.translatedText,
-            audio_url: `/audio/${path.basename(result.translatedAudio)}`,
-            processing_time_ms: result.processingTime,
-            confidence: result.confidence
-          });
-        } else {
-          throw new Error('Не удалось создать аудио файл');
-        }
+        // Отправляем результат
+        res.json({
+          original_text: result.originalText,
+          translated_text: result.translatedText,
+          audio_url: result.translatedAudio ? `/audio/${path.basename(result.translatedAudio)}` : null,
+          processing_time_ms: result.processingTime,
+          confidence: result.confidence
+        });
 
         // Очищаем временный файл
-        fs.unlinkSync(req.file.path);
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
 
       } catch (error) {
         console.error('❌ Ошибка голосового перевода:', error);
-        if (req.file) fs.unlinkSync(req.file.path);
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
         res.status(500).json({ error: error.message });
       }
     });
@@ -209,7 +215,7 @@ class DashkaBotNodeServer {
         cache_size: this.translationCache.size,
         supported_languages: Object.keys(this.translationService.supportedLanguages),
         mode: 'production',
-        openai_configured: true,
+        openai_configured: !!process.env.OPENAI_API_KEY,
         service_stats: this.translationService.getStats(),
         uptime: process.uptime(),
         memory_usage: process.memoryUsage()
@@ -279,10 +285,12 @@ class DashkaBotNodeServer {
         
         // Очистка временных файлов
         try {
-          const tempFiles = fs.readdirSync('temp');
-          tempFiles.forEach(file => {
-            fs.unlinkSync(path.join('temp', file));
-          });
+          if (fs.existsSync('temp')) {
+            const tempFiles = fs.readdirSync('temp');
+            tempFiles.forEach(file => {
+              fs.unlinkSync(path.join('temp', file));
+            });
+          }
         } catch (err) {
           console.log('Очистка temp директории:', err.message);
         }
