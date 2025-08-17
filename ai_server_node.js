@@ -29,6 +29,9 @@ class DashkaBotNodeServer {
 
     // JSON парсер
     this.app.use(express.json({ limit: '10mb' }));
+
+    // Статические файлы веб-интерфейса  
+    this.app.use(express.static(path.join(__dirname, 'dashkabot_web')));
     
     // Multer для загрузки аудио файлов
     const upload = multer({
@@ -54,6 +57,10 @@ class DashkaBotNodeServer {
 
   setupRoutes() {
     // Health check - совместимость с DashkaBot
+    this.app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, 'dashkabot_web', 'index.html'));
+    });
+
     this.app.get('/health', (req, res) => {
       res.json({
         status: 'healthy',
@@ -68,6 +75,7 @@ class DashkaBotNodeServer {
         memory_usage: process.memoryUsage()
       });
     });
+
 
     // Текстовый перевод - основной endpoint для DashkaBot
     this.app.post('/translate', async (req, res) => {

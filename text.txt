@@ -1,6 +1,4 @@
-git add .
-git commit -m "🚀 DashkaBot Cloud ready for Render'"
-git push origin main
+
 echo "4. Заходим на render.com → New Web Service → Connect GitHub"
 echo "5. Выбираем репозиторий → Deploy!"
 echo ""
