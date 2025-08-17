@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">DashkaBot Voice Translator</string>
+    <string name="welcome">Добро пожаловать в DashkaBot!</string>
+    <string name="user_role">🇷🇺 Пользователь</string>
+    <string name="steuerberater_role">🇩🇪 Steuerberater</string>
+    <string name="recording">🎤 Запись...</string>
+    <string name="processing">🔄 Обработка...</string>
+    <string name="ready">✅ Готов к работе</string>
+    <string name="error_network">❌ Ошибка сети</string>
+    <string name="error_permission">❌ Нужны разрешения</string>
+</resources>

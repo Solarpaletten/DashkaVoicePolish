@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+
+# Попытка найти Java
+if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+    JAVA_CMD="$JAVA_HOME/bin/java"
+elif command -v java >/dev/null 2>&1; then
+    JAVA_CMD="java"
+else
+    echo "❌ Java не найдена! Установи Java:"
+    echo "   brew install openjdk"
+    echo "   export JAVA_HOME=\$(brew --prefix openjdk)"
+    exit 1
+fi
+
+# Запуск Gradle
+APP_HOME="$(pwd -P)"
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+
+exec "$JAVA_CMD" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
