@@ -1,287 +1,304 @@
-// DashkaBot Node.js Server - ИСПРАВЛЕННАЯ ВЕРСИЯ
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const OpenAI = require('openai');
+const { UnifiedTranslationService } = require('./UnifiedTranslationService');
 
-// Проверяем API ключ
-if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('ваш-ключ')) {
-    console.error('❌ OPENAI_API_KEY не настроен!');
-    console.error('📝 Отредактируйте файл .env и укажите ваш OpenAI API ключ');
-    process.exit(1);
-}
-
-console.log('✅ OpenAI API ключ найден:', process.env.OPENAI_API_KEY.substring(0, 8) + '...' + process.env.OPENAI_API_KEY.slice(-4));
-
-// Инициализация OpenAI клиента
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-const app = express();
-const PORT = process.env.PORT || 8080;
-
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.static('dashkabot_web'));
-
-// Статистика
-let stats = {
-    totalRequests: 0,
-    successfulTranslations: 0,
-    errors: 0,
-    startTime: new Date(),
-    status: 'production'
-};
-
-// Функция перевода с OpenAI
-async function translateWithOpenAI(text, fromLang, toLang) {
-    const langMap = {
-        'RU': 'Russian',
-        'EN': 'English', 
-        'DE': 'German',
-        'ES': 'Spanish',
-        'FR': 'French',
-        'IT': 'Italian',
-        'PT': 'Portuguese',
-        'PL': 'Polish',
-        'CS': 'Czech'
-    };
-
-    const sourceLang = langMap[fromLang] || fromLang;
-    const targetLang = langMap[toLang] || toLang;
-
-    const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Provide only the translation without any additional comments or explanations:
-
-"${text}"`;
-
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a professional translator. Translate accurately and naturally from ${sourceLang} to ${targetLang}. Return only the translation.`
-                },
-                {
-                    role: "user", 
-                    content: prompt
-                }
-            ],
-            max_tokens: 500,
-            temperature: 0.3,
-        });
-
-        const translatedText = completion.choices[0].message.content.trim();
-        
-        return {
-            originalText: text,
-            translatedText: translatedText,
-            fromLang: fromLang,
-            toLang: toLang,
-            confidence: 0.95,
-            model: 'gpt-4o-mini'
-        };
-
-    } catch (error) {
-        console.error('OpenAI Translation Error:', error);
-        throw new Error(`OpenAI API Error: ${error.message}`);
-    }
-}
-
-// API Routes
-app.get('/api/stats', (req, res) => {
-    try {
-        res.json({
-            status: 'success',
-            stats: {
-                ...stats,
-                uptime: Math.floor((Date.now() - stats.startTime.getTime()) / 1000)
-            }
-        });
-    } catch (error) {
-        console.error('Stats error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Ошибка получения статистики'
-        });
-    }
-});
-
-app.get('/api/languages', (req, res) => {
-    try {
-        const languages = [
-            { code: 'RU', name: 'Русский' },
-            { code: 'EN', name: 'English' },
-            { code: 'DE', name: 'Deutsch' },
-            { code: 'ES', name: 'Español' },
-            { code: 'FR', name: 'Français' },
-            { code: 'IT', name: 'Italiano' },
-            { code: 'PT', name: 'Português' },
-            { code: 'PL', name: 'Polski' },
-            { code: 'CS', name: 'Čeština' }
-        ];
-        
-        res.json({
-            status: 'success',
-            languages
-        });
-    } catch (error) {
-        console.error('Languages error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Ошибка получения языков'
-        });
-    }
-});
-
-app.post('/api/translate', async (req, res) => {
-    console.log('🔄 Получен запрос на перевод:', req.body);
+class DashkaBotNodeServer {
+  constructor() {
+    this.app = express();
+    this.port = 8080;
+    this.translationService = new UnifiedTranslationService();
+    this.requestCount = 0;
+    this.translationCache = new Map();
     
-    try {
-        stats.totalRequests++;
-        const { text, fromLang, toLang } = req.body;
+    this.setupMiddleware();
+    this.setupRoutes();
+    
+    console.log('🤖 DashkaBot Node.js Server инициализирован');
+  }
 
-        // Валидация входных данных
-        if (!text || typeof text !== 'string' || text.trim().length === 0) {
-            stats.errors++;
-            return res.status(400).json({
-                status: 'error',
-                message: 'Параметр text обязателен и должен содержать текст'
-            });
+  setupMiddleware() {
+    // CORS для веб-интерфейса
+    this.app.use(cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization']
+    }));
+
+    // JSON парсер
+    this.app.use(express.json({ limit: '10mb' }));
+    
+    // Multer для загрузки аудио файлов
+    const upload = multer({
+      dest: 'temp/',
+      limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+    });
+    
+    this.upload = upload;
+  }
+
+  setupRoutes() {
+    // Health check - совместимость с DashkaBot
+    this.app.get('/health', (req, res) => {
+      res.json({
+        status: 'healthy',
+        service: 'DashkaBot AI Server (Node.js)',
+        version: '3.0.0',
+        mode: 'production',
+        timestamp: new Date().toISOString(),
+        requests_processed: this.requestCount,
+        supported_languages: Object.keys(this.translationService.supportedLanguages).length
+      });
+    });
+
+    // Текстовый перевод - основной endpoint для DashkaBot
+    this.app.post('/translate', async (req, res) => {
+      try {
+        this.requestCount++;
+        const startTime = Date.now();
+        
+        const { 
+          text, 
+          source_language = 'RU', 
+          target_language = 'DE' 
+        } = req.body;
+
+        if (!text || text.trim() === '') {
+          return res.status(400).json({
+            error: 'Текст для перевода не указан'
+          });
         }
 
-        if (!fromLang || !toLang) {
-            stats.errors++;
-            return res.status(400).json({
-                status: 'error',
-                message: 'Параметры fromLang и toLang обязательны'
-            });
+        console.log(`📥 Запрос #${this.requestCount}: "${text}" (${source_language} → ${target_language})`);
+
+        // Проверяем кэш
+        const cacheKey = `${text.trim()}_${source_language}_${target_language}`;
+        if (this.translationCache.has(cacheKey)) {
+          const cached = this.translationCache.get(cacheKey);
+          console.log('🔄 Перевод из кэша');
+          return res.json({
+            ...cached,
+            from_cache: true,
+            processing_time_ms: Date.now() - startTime
+          });
         }
 
-        const supportedLangs = ['RU', 'EN', 'DE', 'ES', 'FR', 'IT', 'PT', 'PL', 'CS'];
-        if (!supportedLangs.includes(fromLang) || !supportedLangs.includes(toLang)) {
-            stats.errors++;
-            return res.status(400).json({
-                status: 'error',
-                message: `Поддерживаемые языки: ${supportedLangs.join(', ')}`
-            });
-        }
-
-        console.log(`📝 Перевожу "${text}" с ${fromLang} на ${toLang}...`);
+        // Нормализуем коды языков (DashkaBot использует ru/de, а наш сервис RU/DE)
+        const sourceCode = source_language.toUpperCase();
+        const targetCode = target_language.toUpperCase();
 
         // Выполняем перевод
-        const result = await translateWithOpenAI(text.trim(), fromLang, toLang);
-        stats.successfulTranslations++;
+        const result = await this.translationService.translateText(
+          text.trim(), 
+          sourceCode, 
+          targetCode
+        );
 
-        console.log('✅ Перевод успешен:', result.translatedText);
+        // Формируем ответ в формате совместимом с DashkaBot
+        const response = {
+          original_text: result.originalText,
+          translated_text: result.translatedText,
+          source_language: sourceCode.toLowerCase(),
+          target_language: targetCode.toLowerCase(),
+          confidence: result.confidence,
+          timestamp: new Date().toISOString(),
+          processing_time_ms: result.processingTime,
+          mode: 'openai-gpt4o-mini',
+          provider: result.provider,
+          from_cache: false
+        };
 
-        res.json({
-            status: 'success',
-            translation: result
-        });
-
-    } catch (error) {
-        stats.errors++;
-        console.error('❌ Ошибка перевода:', error);
+        // Сохраняем в кэш
+        this.translationCache.set(cacheKey, response);
         
-        // Определяем тип ошибки для пользователя
-        let userMessage = 'Ошибка при выполнении перевода';
-        
-        if (error.message.includes('API')) {
-            userMessage = 'Ошибка API OpenAI: ' + error.message;
-        } else if (error.message.includes('network')) {
-            userMessage = 'Ошибка сети при подключении к OpenAI';
-        } else if (error.message.includes('quota')) {
-            userMessage = 'Превышена квота API OpenAI';
+        // Ограничиваем размер кэша
+        if (this.translationCache.size > 1000) {
+          const firstKey = this.translationCache.keys().next().value;
+          this.translationCache.delete(firstKey);
         }
 
+        console.log(`📤 Перевод: "${result.translatedText}"`);
+        res.json(response);
+
+      } catch (error) {
+        console.error('❌ Ошибка перевода:', error);
         res.status(500).json({
-            status: 'error',
-            message: userMessage,
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+          error: `Ошибка сервера: ${error.message}`,
+          timestamp: new Date().toISOString()
         });
+      }
+    });
+
+    // Голосовой перевод
+    this.app.post('/translate-voice', this.upload.single('audio'), async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: 'Аудио файл не загружен' });
+        }
+
+        const { 
+          source_language = 'RU', 
+          target_language = 'DE' 
+        } = req.body;
+
+        console.log('🎤 Голосовой перевод:', { source_language, target_language });
+
+        const result = await this.translationService.translateVoice(
+          req.file.path,
+          source_language.toUpperCase(),
+          target_language.toUpperCase()
+        );
+
+        // Отправляем аудио файл
+        if (fs.existsSync(result.translatedAudio)) {
+          res.json({
+            original_text: result.originalText,
+            translated_text: result.translatedText,
+            audio_url: `/audio/${path.basename(result.translatedAudio)}`,
+            processing_time_ms: result.processingTime,
+            confidence: result.confidence
+          });
+        } else {
+          throw new Error('Не удалось создать аудио файл');
+        }
+
+        // Очищаем временный файл
+        fs.unlinkSync(req.file.path);
+
+      } catch (error) {
+        console.error('❌ Ошибка голосового перевода:', error);
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Определение языка
+    this.app.post('/detect-language', async (req, res) => {
+      try {
+        const { text } = req.body;
+        
+        if (!text) {
+          return res.status(400).json({ error: 'Текст не указан' });
+        }
+
+        const result = await this.translationService.detectLanguage(text);
+        res.json(result);
+
+      } catch (error) {
+        console.error('❌ Ошибка определения языка:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Поддерживаемые языки
+    this.app.get('/languages', (req, res) => {
+      const languages = this.translationService.getSupportedLanguages();
+      res.json({
+        supported_languages: languages,
+        count: languages.length,
+        service: 'UnifiedTranslationService'
+      });
+    });
+
+    // Статистика - совместимость с DashkaBot
+    this.app.get('/stats', (req, res) => {
+      res.json({
+        requests_processed: this.requestCount,
+        cache_size: this.translationCache.size,
+        supported_languages: Object.keys(this.translationService.supportedLanguages),
+        mode: 'production',
+        openai_configured: true,
+        service_stats: this.translationService.getStats(),
+        uptime: process.uptime(),
+        memory_usage: process.memoryUsage()
+      });
+    });
+
+    // Раздача аудио файлов
+    this.app.use('/audio', express.static(path.join(__dirname, 'audio_output')));
+
+    // Корневой маршрут
+    this.app.get('/', (req, res) => {
+      res.json({
+        service: 'DashkaBot AI Server (Node.js)',
+        version: '3.0.0',
+        status: 'running',
+        endpoints: [
+          'GET /health - Проверка состояния',
+          'POST /translate - Текстовый перевод',
+          'POST /translate-voice - Голосовой перевод',
+          'POST /detect-language - Определение языка',
+          'GET /languages - Поддерживаемые языки',
+          'GET /stats - Статистика'
+        ],
+        languages: Object.keys(this.translationService.supportedLanguages).length
+      });
+    });
+  }
+
+  async start() {
+    try {
+      // Создаем необходимые директории
+      const dirs = ['temp', 'audio_output'];
+      dirs.forEach(dir => {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+      });
+
+      this.server = this.app.listen(this.port, () => {
+        console.log('🚀 DashkaBot Node.js Server запущен!');
+        console.log(`🔗 Доступен на: http://localhost:${this.port}`);
+        console.log('📋 Endpoints:');
+        console.log(`   GET  http://localhost:${this.port}/health`);
+        console.log(`   POST http://localhost:${this.port}/translate`);
+        console.log(`   POST http://localhost:${this.port}/translate-voice`);
+        console.log(`   GET  http://localhost:${this.port}/languages`);
+        console.log(`   GET  http://localhost:${this.port}/stats`);
+        console.log(`🌍 Поддерживаемые языки: ${Object.keys(this.translationService.supportedLanguages).join(', ')}`);
+      });
+
+      // Graceful shutdown
+      process.on('SIGTERM', () => this.shutdown());
+      process.on('SIGINT', () => this.shutdown());
+
+    } catch (error) {
+      console.error('❌ Ошибка запуска сервера:', error);
+      process.exit(1);
     }
-});
+  }
 
-// Простой endpoint для тестирования
-app.get('/api/test', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'DashkaBot API работает!',
-        timestamp: new Date().toISOString(),
-        openai: !!process.env.OPENAI_API_KEY
-    });
-});
-
-// Корневой маршрут - редирект на web интерфейс
-app.get('/', (req, res) => {
-    res.redirect('/index_simple.html');
-});
-
-// Обработка несуществующих маршрутов
-app.use('*', (req, res) => {
-    res.status(404).json({
-        status: 'error',
-        message: 'Endpoint не найден',
-        availableEndpoints: [
-            'GET /api/stats',
-            'GET /api/languages', 
-            'POST /api/translate',
-            'GET /api/test'
-        ]
-    });
-});
-
-// Глобальная обработка ошибок
-app.use((error, req, res, next) => {
-    console.error('🚨 Необработанная ошибка:', error);
-    stats.errors++;
+  shutdown() {
+    console.log('🛑 Получен сигнал завершения...');
     
-    res.status(500).json({
-        status: 'error',
-        message: 'Внутренняя ошибка сервера',
-        timestamp: new Date().toISOString()
-    });
-});
+    if (this.server) {
+      this.server.close(() => {
+        console.log('✅ Сервер остановлен');
+        
+        // Очистка временных файлов
+        try {
+          const tempFiles = fs.readdirSync('temp');
+          tempFiles.forEach(file => {
+            fs.unlinkSync(path.join('temp', file));
+          });
+        } catch (err) {
+          console.log('Очистка temp директории:', err.message);
+        }
+        
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
+  }
+}
 
 // Запуск сервера
-const server = app.listen(PORT, () => {
-    console.log('🚀 DashkaBot AI Server запущен на порту', PORT);
-    console.log('🌐 Web интерфейс: http://localhost:' + PORT);
-    console.log('🤖 API endpoint: http://localhost:' + PORT + '/api/');
-    console.log('📊 Статус: Реальные OpenAI сервисы активны');
-    console.log('🧪 Тест: http://localhost:' + PORT + '/api/test');
-});
+if (require.main === module) {
+  const server = new DashkaBotNodeServer();
+  server.start();
+}
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('🛑 Получен сигнал завершения, закрываем сервер...');
-    server.close(() => {
-        console.log('✅ Сервер закрыт');
-        process.exit(0);
-    });
-});
-
-process.on('SIGINT', () => {
-    console.log('\n🛑 Получен Ctrl+C, закрываем сервер...');
-    server.close(() => {
-        console.log('✅ Сервер закрыт');
-        process.exit(0);
-    });
-});
-
-// Обработка необработанных исключений
-process.on('uncaughtException', (error) => {
-    console.error('🚨 Необработанное исключение:', error);
-    process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('🚨 Необработанный reject:', reason);
-    process.exit(1);
-});
+module.exports = { DashkaBotNodeServer };
