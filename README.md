@@ -1,3 +1,5 @@
+./launch_dashkabot_complete.sh  node simple_web_server.js
+
 delete DashkaBotAndroid add neew DashkaBotAndroid_New make android studio
 
 # 🚀 DashkaBot - Голосовой переводчик
