@@ -20,7 +20,7 @@ class DashkaBotNodeServer {
   }
 
   setupMiddleware() {
-    // CORS для веб-интерфейса
+    // CORS для веб-интерфейса и мобильного
     this.app.use(cors({
       origin: '*',
       methods: ['GET', 'POST', 'OPTIONS'],
@@ -33,10 +33,23 @@ class DashkaBotNodeServer {
     // Multer для загрузки аудио файлов
     const upload = multer({
       dest: 'temp/',
-      limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('audio/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Только аудио файлы разрешены'));
+        }
+      }
     });
     
     this.upload = upload;
+
+    // Логирование запросов
+    this.app.use((req, res, next) => {
+      console.log(`📡 ${req.method} ${req.path} - ${req.ip}`);
+      next();
+    });
   }
 
   setupRoutes() {
@@ -49,7 +62,10 @@ class DashkaBotNodeServer {
         mode: 'production',
         timestamp: new Date().toISOString(),
         requests_processed: this.requestCount,
-        supported_languages: Object.keys(this.translationService.supportedLanguages).length
+        supported_languages: Object.keys(this.translationService.supportedLanguages).length,
+        openai_configured: !!process.env.OPENAI_API_KEY,
+        uptime: process.uptime(),
+        memory_usage: process.memoryUsage()
       });
     });
 
@@ -63,55 +79,58 @@ class DashkaBotNodeServer {
           text, 
           source_language = 'RU', 
           target_language = 'DE',
-          from = 'RU',
-          to = 'DE'
+          fromLang,
+          toLang,
+          from,
+          to
         } = req.body;
 
         // Поддержка разных форматов параметров
-        const fromLang = source_language || from;
-        const toLang = target_language || to;
+        const sourceCode = source_language || fromLang || from || 'RU';
+        const targetCode = target_language || toLang || to || 'DE';
 
         if (!text || text.trim() === '') {
           return res.status(400).json({
-            error: 'Текст для перевода не указан'
+            status: 'error',
+            message: 'Текст для перевода не указан'
           });
         }
 
-        console.log(`📥 Запрос #${this.requestCount}: "${text}" (${fromLang} → ${toLang})`);
+        console.log(`📥 Запрос #${this.requestCount}: "${text.substring(0, 50)}..." (${sourceCode} → ${targetCode})`);
 
         // Проверяем кэш
-        const cacheKey = `${text.trim()}_${fromLang}_${toLang}`;
+        const cacheKey = `${text.trim()}_${sourceCode}_${targetCode}`;
         if (this.translationCache.has(cacheKey)) {
           const cached = this.translationCache.get(cacheKey);
           console.log('🔄 Перевод из кэша');
           return res.json({
             ...cached,
             from_cache: true,
-            processing_time_ms: Date.now() - startTime
+            processing_time: Date.now() - startTime
           });
         }
 
         // Нормализуем коды языков
-        const sourceCode = fromLang.toUpperCase();
-        const targetCode = toLang.toUpperCase();
+        const normalizedSource = sourceCode.toUpperCase();
+        const normalizedTarget = targetCode.toUpperCase();
 
         // Выполняем перевод
         const result = await this.translationService.translateText(
           text.trim(), 
-          sourceCode, 
-          targetCode
+          normalizedSource, 
+          normalizedTarget
         );
 
         // Формируем ответ в формате совместимом с DashkaBot
         const response = {
+          status: 'success',
           original_text: result.originalText,
           translated_text: result.translatedText,
-          source_language: sourceCode.toLowerCase(),
-          target_language: targetCode.toLowerCase(),
+          source_language: normalizedSource.toLowerCase(),
+          target_language: normalizedTarget.toLowerCase(),
           confidence: result.confidence,
           timestamp: new Date().toISOString(),
-          processing_time_ms: result.processingTime,
-          mode: 'openai-gpt4o-mini',
+          processing_time: result.processingTime,
           provider: result.provider,
           from_cache: false
         };
@@ -125,45 +144,58 @@ class DashkaBotNodeServer {
           this.translationCache.delete(firstKey);
         }
 
-        console.log(`📤 Перевод: "${result.translatedText}"`);
+        console.log(`📤 Перевод: "${result.translatedText.substring(0, 50)}..."`);
         res.json(response);
 
       } catch (error) {
         console.error('❌ Ошибка перевода:', error);
         res.status(500).json({
-          error: `Ошибка сервера: ${error.message}`,
+          status: 'error',
+          message: `Ошибка сервера: ${error.message}`,
           timestamp: new Date().toISOString()
         });
       }
     });
 
     // Голосовой перевод
-    this.app.post('/translate-voice', this.upload.single('audio'), async (req, res) => {
+    this.app.post('/voice-translate', this.upload.single('audio'), async (req, res) => {
       try {
         if (!req.file) {
-          return res.status(400).json({ error: 'Аудио файл не загружен' });
+          return res.status(400).json({ 
+            status: 'error',
+            message: 'Аудио файл не загружен' 
+          });
         }
 
         const { 
-          source_language = 'RU', 
-          target_language = 'DE' 
+          fromLang = 'RU', 
+          toLang = 'DE',
+          source_language = 'RU',
+          target_language = 'DE'
         } = req.body;
 
-        console.log('🎤 Голосовой перевод:', { source_language, target_language });
+        const sourceCode = fromLang || source_language;
+        const targetCode = toLang || target_language;
+
+        console.log('🎤 Голосовой перевод:', { sourceCode, targetCode });
 
         const result = await this.translationService.translateVoice(
           req.file.path,
-          source_language.toUpperCase(),
-          target_language.toUpperCase()
+          sourceCode.toUpperCase(),
+          targetCode.toUpperCase()
         );
 
         // Отправляем результат
         res.json({
-          original_text: result.originalText,
-          translated_text: result.translatedText,
-          audio_url: result.translatedAudio ? `/audio/${path.basename(result.translatedAudio)}` : null,
-          processing_time_ms: result.processingTime,
-          confidence: result.confidence
+          status: 'success',
+          originalText: result.originalText,
+          translatedText: result.translatedText,
+          audioUrl: result.translatedAudio ? `/audio/${path.basename(result.translatedAudio)}` : null,
+          fromLanguage: result.fromLanguage,
+          toLanguage: result.toLanguage,
+          processingTime: result.processingTime,
+          confidence: result.confidence,
+          provider: result.provider
         });
 
         // Очищаем временный файл
@@ -176,7 +208,10 @@ class DashkaBotNodeServer {
         if (req.file && fs.existsSync(req.file.path)) {
           fs.unlinkSync(req.file.path);
         }
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+          status: 'error',
+          message: error.message 
+        });
       }
     });
 
@@ -186,15 +221,26 @@ class DashkaBotNodeServer {
         const { text } = req.body;
         
         if (!text) {
-          return res.status(400).json({ error: 'Текст не указан' });
+          return res.status(400).json({ 
+            status: 'error',
+            message: 'Текст не указан' 
+          });
         }
 
         const result = await this.translationService.detectLanguage(text);
-        res.json(result);
+        res.json({
+          status: 'success',
+          detected_language: result.language,
+          confidence: result.confidence,
+          provider: result.provider
+        });
 
       } catch (error) {
         console.error('❌ Ошибка определения языка:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+          status: 'error',
+          message: error.message 
+        });
       }
     });
 
@@ -202,8 +248,9 @@ class DashkaBotNodeServer {
     this.app.get('/languages', (req, res) => {
       const languages = this.translationService.getSupportedLanguages();
       res.json({
-        supported_languages: languages,
+        status: 'success',
         count: languages.length,
+        languages: languages,
         service: 'UnifiedTranslationService'
       });
     });
@@ -211,19 +258,32 @@ class DashkaBotNodeServer {
     // Статистика - совместимость с DashkaBot
     this.app.get('/stats', (req, res) => {
       res.json({
-        requests_processed: this.requestCount,
-        cache_size: this.translationCache.size,
-        supported_languages: Object.keys(this.translationService.supportedLanguages),
-        mode: 'production',
-        openai_configured: !!process.env.OPENAI_API_KEY,
-        service_stats: this.translationService.getStats(),
-        uptime: process.uptime(),
-        memory_usage: process.memoryUsage()
+        status: 'success',
+        stats: {
+          requests_processed: this.requestCount,
+          cache_size: this.translationCache.size,
+          supported_languages: Object.keys(this.translationService.supportedLanguages).length,
+          openai_configured: !!process.env.OPENAI_API_KEY,
+          service_stats: this.translationService.getStats(),
+          uptime: process.uptime(),
+          memory_usage: process.memoryUsage(),
+          version: '3.0.0'
+        }
       });
     });
 
     // Раздача аудио файлов
-    this.app.use('/audio', express.static(path.join(__dirname, 'audio_output')));
+    this.app.use('/audio', express.static(path.join(__dirname, 'tmp')));
+
+    // Тестовый endpoint
+    this.app.get('/test', (req, res) => {
+      res.json({
+        status: 'success',
+        message: 'DashkaBot AI Server работает отлично!',
+        timestamp: new Date().toISOString(),
+        version: '3.0.0'
+      });
+    });
 
     // Корневой маршрут
     this.app.get('/', (req, res) => {
@@ -234,12 +294,32 @@ class DashkaBotNodeServer {
         endpoints: [
           'GET /health - Проверка состояния',
           'POST /translate - Текстовый перевод',
-          'POST /translate-voice - Голосовой перевод',
+          'POST /voice-translate - Голосовой перевод',
           'POST /detect-language - Определение языка',
           'GET /languages - Поддерживаемые языки',
-          'GET /stats - Статистика'
+          'GET /stats - Статистика',
+          'GET /test - Тестовый endpoint'
         ],
-        languages: Object.keys(this.translationService.supportedLanguages).length
+        supported_languages: Object.keys(this.translationService.supportedLanguages).length,
+        openai_configured: !!process.env.OPENAI_API_KEY
+      });
+    });
+
+    // 404 обработчик
+    this.app.use((req, res) => {
+      res.status(404).json({
+        status: 'error',
+        message: 'Endpoint не найден',
+        available_endpoints: ['/health', '/translate', '/voice-translate', '/languages', '/stats']
+      });
+    });
+
+    // Глобальный обработчик ошибок
+    this.app.use((error, req, res, next) => {
+      console.error('❌ Server error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Внутренняя ошибка сервера'
       });
     });
   }
@@ -247,23 +327,26 @@ class DashkaBotNodeServer {
   async start() {
     try {
       // Создаем необходимые директории
-      const dirs = ['temp', 'audio_output'];
+      const dirs = ['temp', 'tmp', 'uploads', 'cache'];
       dirs.forEach(dir => {
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
       });
 
-      this.server = this.app.listen(this.port, () => {
-        console.log('🚀 DashkaBot Node.js Server запущен!');
-        console.log(`🔗 Доступен на: http://localhost:${this.port}`);
+      // Запускаем сервер на мобильном IP для совместимости
+      this.server = this.app.listen(this.port, "172.20.10.4", () => {
+        console.log('🚀 DashkaBot AI Server запущен!');
+        console.log(`🔗 Доступен на: http://172.20.10.4:${this.port}`);
+        console.log(`🏠 Локально: http://localhost:${this.port}`);
         console.log('📋 Endpoints:');
-        console.log(`   GET  http://localhost:${this.port}/health`);
-        console.log(`   POST http://localhost:${this.port}/translate`);
-        console.log(`   POST http://localhost:${this.port}/translate-voice`);
-        console.log(`   GET  http://localhost:${this.port}/languages`);
-        console.log(`   GET  http://localhost:${this.port}/stats`);
+        console.log(`   GET  http://172.20.10.4:${this.port}/health`);
+        console.log(`   POST http://172.20.10.4:${this.port}/translate`);
+        console.log(`   POST http://172.20.10.4:${this.port}/voice-translate`);
+        console.log(`   GET  http://172.20.10.4:${this.port}/languages`);
+        console.log(`   GET  http://172.20.10.4:${this.port}/stats`);
         console.log(`🌍 Поддерживаемые языки: ${Object.keys(this.translationService.supportedLanguages).join(', ')}`);
+        console.log(`🔑 OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ Настроен' : '❌ Не настроен'}`);
       });
 
       // Graceful shutdown
@@ -285,14 +368,20 @@ class DashkaBotNodeServer {
         
         // Очистка временных файлов
         try {
-          if (fs.existsSync('temp')) {
-            const tempFiles = fs.readdirSync('temp');
-            tempFiles.forEach(file => {
-              fs.unlinkSync(path.join('temp', file));
-            });
-          }
+          ['temp', 'tmp'].forEach(dir => {
+            if (fs.existsSync(dir)) {
+              const files = fs.readdirSync(dir);
+              files.forEach(file => {
+                try {
+                  fs.unlinkSync(path.join(dir, file));
+                } catch (err) {
+                  // Игнорируем ошибки удаления
+                }
+              });
+            }
+          });
         } catch (err) {
-          console.log('Очистка temp директории:', err.message);
+          console.log('Очистка временных файлов:', err.message);
         }
         
         process.exit(0);

@@ -1,162 +1,99 @@
 #!/bin/bash
 
-# DashkaBot - Полный запуск всех сервисов
-# Автоматический запуск: AI Server + WebSocket + Web Interface
+# DashkaBot - Скрипт остановки всех сервисов
 
-echo "🚀 DashkaBot - Полная система голосового перевода"
-echo "=================================================="
-echo "⏰ Запуск: $(date)"
-echo "📁 Директория: $(pwd)"
-echo "✅ Node.js: $(node -v)"
-echo ""
+echo "🛑 Остановка DashkaBot системы..."
+echo "=================================="
 
-# Проверяем .env файл
-if [ -f ".env" ]; then
-    echo "🔧 Загрузка .env файла..."
-    export $(cat .env | xargs)
-    if [ ! -z "$OPENAI_API_KEY" ]; then
-        echo "✅ OpenAI API ключ загружен: ${OPENAI_API_KEY:0:12}...${OPENAI_API_KEY: -4}"
-    else
-        echo "⚠️ OpenAI API ключ не найден в .env"
-    fi
-else
-    echo "⚠️ .env файл не найден"
+# Останавливаем по PID файлам
+if [ -f ".dashkabot_mobile.pid" ]; then
+    echo "📋 Чтение PID файла..."
+    PIDS=$(cat .dashkabot_mobile.pid)
+    IFS=':' read -ra PID_ARRAY <<< "$PIDS"
+    
+    for pid in "${PID_ARRAY[@]}"; do
+        if [ ! -z "$pid" ] && kill -0 $pid 2>/dev/null; then
+            echo "🔪 Остановка процесса PID: $pid"
+            kill $pid
+        fi
+    done
+    
+    rm .dashkabot_mobile.pid
 fi
 
-# Проверяем все необходимые файлы
-FILES=("ai_server_node.js" "simple_web_server.js" "simple_websocket_server.js" "unifiedTranslationService.js" "package.json")
-for file in "${FILES[@]}"; do
-    if [ -f "$file" ]; then
-        echo "✅ $file найден"
-    else
-        echo "❌ $file отсутствует!"
-        exit 1
+# Останавливаем по именам процессов
+echo "🔍 Поиск и остановка DashkaBot процессов..."
+
+PROCESSES=(
+    "ai_server_node.js"
+    "simple_websocket_server.js" 
+    "mobile_web_server.js"
+    "simple_web_server.js"
+    "websocket_server.js"
+)
+
+for process in "${PROCESSES[@]}"; do
+    PIDS=$(pgrep -f "$process")
+    if [ ! -z "$PIDS" ]; then
+        echo "🔪 Остановка: $process (PIDs: $PIDS)"
+        pkill -f "$process"
     fi
 done
 
-echo ""
+# Освобождаем порты принудительно
+echo "🔓 Освобождение портов..."
+PORTS=(8080 8090 8765 8766)
 
-# Останавливаем существующие процессы
-echo "🛑 Остановка существующих процессов..."
-pkill -f "node ai_server_node.js" 2>/dev/null || true
-pkill -f "node simple_web_server.js" 2>/dev/null || true  
-pkill -f "node simple_websocket_server.js" 2>/dev/null || true
-pkill -f "dashkabot" 2>/dev/null || true
-
-# Освобождаем порты
-for port in 8080 8090 8765 8766; do
+for port in "${PORTS[@]}"; do
     PID=$(lsof -ti:$port 2>/dev/null)
     if [ ! -z "$PID" ]; then
-        echo "🔓 Освобождение порта $port (PID: $PID)"
+        echo "🔪 Освобождение порта $port (PID: $PID)"
         kill -9 $PID 2>/dev/null || true
     fi
 done
 
+# Очистка PID файлов
+echo "🧹 Очистка PID файлов..."
+rm -f run/*.pid 2>/dev/null || true
+rm -f .*.pid 2>/dev/null || true
+
+# Очистка временных файлов
+echo "🧹 Очистка временных файлов..."
+TEMP_DIRS=("temp" "tmp" "uploads")
+
+for dir in "${TEMP_DIRS[@]}"; do
+    if [ -d "$dir" ]; then
+        echo "🗑️ Очистка $dir/"
+        find "$dir" -type f -mmin +60 -delete 2>/dev/null || true
+    fi
+done
+
+# Проверяем что все остановлено
 sleep 2
-
-# Создаем директории
-echo "📁 Создание директорий..."
-mkdir -p logs dashkabot_web uploads cache
-
-# Установка зависимостей если нужно
-if [ ! -d "node_modules" ]; then
-    echo "📦 Установка зависимостей..."
-    npm install
-fi
-
 echo ""
+echo "🔍 Проверка остановки..."
 
-# 1. Запуск AI Server
-echo "🤖 Запуск AI Server на порту 8080..."
-nohup node ai_server_node.js > logs/ai_server.log 2>&1 &
-AI_PID=$!
-sleep 3
+REMAINING=$(pgrep -f "dashkabot\|ai_server\|websocket_server\|mobile_web" 2>/dev/null || true)
 
-if kill -0 $AI_PID 2>/dev/null; then
-    echo "✅ AI Server запущен (PID: $AI_PID)"
+if [ -z "$REMAINING" ]; then
+    echo "✅ Все процессы DashkaBot остановлены"
 else
-    echo "❌ Ошибка запуска AI Server"
-    echo "Логи:"
-    tail -10 logs/ai_server.log
-    exit 1
+    echo "⚠️ Остались процессы: $REMAINING"
+    echo "💀 Принудительная остановка..."
+    echo "$REMAINING" | xargs -r kill -9 2>/dev/null || true
 fi
 
-# 2. Запуск WebSocket Server
-echo "🔌 Запуск WebSocket Server на порту 8765..."
-nohup node simple_websocket_server.js > logs/websocket.log 2>&1 &
-WS_PID=$!
-sleep 2
-
-if kill -0 $WS_PID 2>/dev/null; then
-    echo "✅ WebSocket Server запущен (PID: $WS_PID)"
-else
-    echo "❌ Ошибка запуска WebSocket Server"
-    echo "Логи:"
-    tail -10 logs/websocket.log
-fi
-
-# 3. Запуск Web Server
-echo "🌐 Запуск Web Server на порту 8090..."
-nohup node simple_web_server.js > logs/web_server.log 2>&1 &
-WEB_PID=$!
-sleep 2
-
-if kill -0 $WEB_PID 2>/dev/null; then
-    echo "✅ Web Server запущен (PID: $WEB_PID)"
-else
-    echo "❌ Ошибка запуска Web Server"
-    echo "Логи:"
-    tail -10 logs/web_server.log
-fi
+# Проверяем порты
+echo "🔍 Проверка портов..."
+for port in "${PORTS[@]}"; do
+    if lsof -ti:$port > /dev/null 2>&1; then
+        echo "⚠️ Порт $port все еще занят"
+    else
+        echo "✅ Порт $port свободен"
+    fi
+done
 
 echo ""
-echo "🔍 Проверка состояния серверов..."
-
-# Проверка AI Server
-if curl -s http://localhost:8080/health > /dev/null; then
-    echo "✅ AI Server отвечает на http://localhost:8080"
-    LANGUAGES=$(curl -s http://localhost:8080/languages | jq -r '.count' 2>/dev/null || echo "N/A")
-    echo "📊 Поддерживаемые языки: $LANGUAGES"
-else
-    echo "❌ AI Server недоступен"
-fi
-
-# Проверка WebSocket
-if curl -s http://localhost:8766/health > /dev/null; then
-    echo "✅ WebSocket Server отвечает на ws://localhost:8765"
-else
-    echo "⚠️ WebSocket Server недоступен"
-fi
-
-# Проверка Web Interface
-if curl -s http://localhost:8090 > /dev/null; then
-    echo "✅ Web Interface доступен на http://localhost:8090"
-else
-    echo "⚠️ Web Interface недоступен"
-fi
-
-echo ""
-echo "🎉 DashkaBot запущен!"
-echo ""
-echo "🔗 Доступные URL:"
-echo "   🌐 Web Interface: http://localhost:8090"
-echo "   🤖 AI Server API: http://localhost:8080"  
-echo "   🔌 WebSocket: ws://localhost:8765"
-echo "   📊 WebSocket Health: http://localhost:8766/health"
-echo ""
-echo "📋 Управление:"
-echo "   Остановить: pkill -f dashkabot"
-echo "   Логи AI: tail -f logs/ai_server.log"
-echo "   Логи WS: tail -f logs/websocket.log"
-echo "   Логи Web: tail -f logs/web_server.log"
-echo "   Статус: curl http://localhost:8080/health"
-echo ""
-
-# Запись PID для остановки
-echo "$AI_PID:$WS_PID:$WEB_PID" > .dashkabot.pid
-
-echo "💡 Для остановки нажмите Ctrl+C или выполните:"
-echo "   ./stop_dashkabot.sh"
-echo ""
-echo "⏳ Все сервисы запущены и работают в фоне!"
-echo "📱 Откройте браузер: http://localhost:8090"
+echo "🎯 DashkaBot остановлен!"
+echo "📊 Логи сохранены в logs/"
+echo "🔄 Для запуска: ./launch_dashkabot_mobile.sh"
