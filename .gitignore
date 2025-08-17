@@ -1,0 +1,16 @@
+Logs
+*.log
+logs/
+Build outputs
+build/
+*.apk
+*.aab
+Temporary files
+*.tmp
+.DS_Store
+node_modules/
+
+.env
+.env*
+*.env
+.env
