@@ -14,3 +14,11 @@ node_modules/
 .env*
 *.env
 .env
+
+# Render specific
+.render/
+render.yaml.bak
+
+# Additional temp files
+*.log
+cache/

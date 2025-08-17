@@ -330,9 +330,9 @@
         
         // Конфигурация серверов
         const config = {
-            aiServer: 'http://172.20.10.4:8080',
-            wsServer: 'ws://172.20.10.4:8765',
-            enableWebSocket: true,
+            aiServer: window.location.origin, // Используем тот же сервер, что и для веб-приложения
+            wsServer: `wss://${window.location.host}`, //
+            enableWebSocket: false,
             enableSpeech: true
         };
 

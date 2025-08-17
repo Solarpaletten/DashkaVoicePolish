@@ -8,7 +8,7 @@ const { UnifiedTranslationService } = require('./unifiedTranslationService');
 class DashkaBotNodeServer {
   constructor() {
     this.app = express();
-    this.port = 8080;
+    this.port = process.env.PORT || 8080;
     this.translationService = new UnifiedTranslationService();
     this.requestCount = 0;
     this.translationCache = new Map();
@@ -335,16 +335,16 @@ class DashkaBotNodeServer {
       });
 
       // Запускаем сервер на мобильном IP для совместимости
-      this.server = this.app.listen(this.port, "172.20.10.4", () => {
+      this.server = this.app.listen(this.port, "0.0.0.0", () => {
         console.log('🚀 DashkaBot AI Server запущен!');
-        console.log(`🔗 Доступен на: http://172.20.10.4:${this.port}`);
+        console.log(`🔗 Доступен на: http://0.0.0.0:${this.port}`);
         console.log(`🏠 Локально: http://localhost:${this.port}`);
         console.log('📋 Endpoints:');
-        console.log(`   GET  http://172.20.10.4:${this.port}/health`);
-        console.log(`   POST http://172.20.10.4:${this.port}/translate`);
-        console.log(`   POST http://172.20.10.4:${this.port}/voice-translate`);
-        console.log(`   GET  http://172.20.10.4:${this.port}/languages`);
-        console.log(`   GET  http://172.20.10.4:${this.port}/stats`);
+        console.log(`   GET  http://0.0.0.0:${this.port}/health`);
+        console.log(`   POST http://0.0.0.0:${this.port}/translate`);
+        console.log(`   POST http://0.0.0.0:${this.port}/voice-translate`);
+        console.log(`   GET  http://0.0.0.0:${this.port}/languages`);
+        console.log(`   GET  http://0.0.0.0:${this.port}/stats`);
         console.log(`🌍 Поддерживаемые языки: ${Object.keys(this.translationService.supportedLanguages).join(', ')}`);
         console.log(`🔑 OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ Настроен' : '❌ Не настроен'}`);
       });

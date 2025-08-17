@@ -1,0 +1,13 @@
+
+services:
+  - type: web
+    name: dashkabot-cloud
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node ai_server_node.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
