@@ -678,48 +678,27 @@
         }
         
         // Синтез речи
-        // Синтез речи - СУПЕРКОМАНДА UPGRADE!
         function speakTranslation(text, language) {
-            console.log('🔊 Запуск TTS:', text, language);
+            if (!('speechSynthesis' in window)) return;
             
-            // 🚀 ПРИОРИТЕТ: Нативный Android TTS
-            if (window.DashkaBotAndroid && window.DashkaBotAndroid.speakText) {
-                console.log('📱 Используем нативный Android TTS');
-                window.DashkaBotAndroid.speakText(text, language);
-                updateStatus('🔊 Произношу через Android TTS...');
-                setTimeout(() => updateStatus('✅ Готово!'), 3000);
-                return;
-            }
-            
-            // 🌐 FALLBACK: Browser TTS
-            if (!('speechSynthesis' in window)) {
-                console.log('❌ Speech Synthesis недоступен');
-                updateStatus('❌ Озвучивание недоступно');
-                return;
-            }
-            
-            console.log('🌐 Используем браузерный TTS');
             speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = language === 'de' ? 'de-DE' : 
-                            language === 'en' ? 'en-US' :
-                            language === 'es' ? 'es-ES' :
-                            language === 'pl' ? 'pl-PL' :
-                            language === 'cs' ? 'cs-CZ' :
-                            language === 'lt' ? 'lt-LT' :
-                            language === 'lv' ? 'lv-LV' :
-                            language === 'no' ? 'no-NO' :
-                            'ru-RU';
+            utterance.lang = language === 'de' ? 'de-DE' : 'ru-RU';
             utterance.rate = 0.8;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
-            utterance.onstart = () => updateStatus('🔊 Произношу перевод...');
-            utterance.onend = () => updateStatus('✅ Готово!');
-            utterance.onerror = (event) => {
+            utterance.onstart = function() {
+                updateStatus('🔊 Произношу перевод...');
+            };
+            
+            utterance.onend = function() {
+                updateStatus('✅ Готово!');
+            };
+            
+            utterance.onerror = function(event) {
                 console.error('Speech synthesis error:', event.error);
-                updateStatus('❌ Ошибка озвучивания');
             };
             
             speechSynthesis.speak(utterance);

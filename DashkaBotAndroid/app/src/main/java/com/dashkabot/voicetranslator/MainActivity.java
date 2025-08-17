@@ -14,12 +14,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.dashkabot.voicetranslator.databinding.ActivityMainBinding;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "DashkaBot";
     private static final int REQUEST_PERMISSIONS = 100;
     private ActivityMainBinding binding;
     private WebView webView;
+    private TextToSpeech textToSpeech;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +32,17 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "🚀 DashkaBot запускается...");
         setupWebView();
         checkPermissions();
+        initializeTTS();
+    }
+    
+    private void initializeTTS() {
+        textToSpeech = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                Log.i(TAG, "✅ TTS инициализирован");
+            } else {
+                Log.e(TAG, "❌ TTS не инициализирован");
+            }
+        });
     }
     
     @SuppressLint("SetJavaScriptEnabled")
@@ -60,8 +73,7 @@ public class MainActivity extends AppCompatActivity {
         // Загружаем интерфейс
         String serverUrl = "http://localhost:8090";
         Log.i(TAG, "🌐 Загружаем интерфейс: " + serverUrl);
-        webView.loadUrl("http://172.20.10.4:8090"); // Замените на ваш IP-адрес сервера
-        // webView.loadUrl(serverUrl); // Используйте этот вариант, если сервер доступен по локальному адресу
+        webView.loadUrl("http://172.20.10.4:8090");
     }
     
     private void checkPermissions() {
@@ -99,6 +111,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
+        super.onDestroy();
+    }
+
     public class DashkaBotJSInterface {
         @JavascriptInterface
         public void log(String message) {
@@ -113,6 +134,43 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void showToast(String message) {
             runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
+        }
+
+        @JavascriptInterface
+        public void speakText(String text, String language) {
+            Log.i(TAG, "🔊 TTS запрос: " + text + " (" + language + ")");
+            
+            if (textToSpeech == null) {
+                Log.e(TAG, "❌ TTS не инициализирован");
+                return;
+            }
+            
+            runOnUiThread(() -> {
+                Locale locale = getLocaleForLanguage(language);
+                int result = textToSpeech.setLanguage(locale);
+                
+                if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
+                    textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "dashkabot_tts");
+                    Log.i(TAG, "✅ TTS проигрывается на " + language);
+                } else {
+                    Log.e(TAG, "❌ Язык не поддерживается: " + language);
+                    Toast.makeText(MainActivity.this, "Язык " + language + " не поддерживается", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        
+        private Locale getLocaleForLanguage(String language) {
+            switch (language) {
+                case "de": return Locale.GERMAN;
+                case "en": return Locale.ENGLISH;
+                case "es": return new Locale("es");
+                case "pl": return new Locale("pl");
+                case "cs": return new Locale("cs");
+                case "lt": return new Locale("lt");
+                case "lv": return new Locale("lv");
+                case "no": return new Locale("no");
+                default: return new Locale("ru");
+            }
         }
     }
 }
