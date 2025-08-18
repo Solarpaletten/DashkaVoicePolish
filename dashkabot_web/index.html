@@ -416,9 +416,9 @@
 
                 // Конфигурация серверов
                 const config = {
-                    aiServer: window.location.origin, // Используем тот же сервер, что и для веб-приложения
-                    wsServer: `wss://${window.location.host}`, //
-                    enableWebSocket: false,
+                    aiServer: window.location.origin,
+                    wsServer: `wss://${window.location.host}/ws`,  // ✅ Правильный WebSocket URL
+                    enableWebSocket: true,  // ✅ Включаем WebSocket
                     enableSpeech: true
                 };
 
@@ -857,8 +857,8 @@
 
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = language === 'de' ? 'de-DE' :
-                    language === 'en' ? 'en-US' :
-                            language === 'es' ? 'es-ES' :
+                        language === 'en' ? 'en-US' :
+                        language === 'es' ? 'es-ES' :
                             language === 'pl' ? 'pl-PL' :
                             language === 'cs' ? 'cs-CZ' :
                             language === 'lt' ? 'lt-LT' :
