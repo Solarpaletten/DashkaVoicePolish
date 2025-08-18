@@ -1,13 +1,23 @@
 {
-  "name": "dashkabot-cloud",
+  "name": "dashkabot-ai-server",
   "version": "3.0.0",
-  "description": "DashkaBot Cloud - AI Voice Translator",
+  "description": "DashkaBot AI Translation Server with WebSocket support",
   "main": "ai_server_node.js",
   "scripts": {
     "start": "node ai_server_node.js",
-    "dev": "nodemon ai_server_node.js"
+    "dev": "nodemon ai_server_node.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
-  "keywords": ["translation", "ai", "voice", "render", "cloud"],
+  "keywords": [
+    "translation",
+    "ai",
+    "openai",
+    "voice",
+    "render",
+    "cloud",
+    "dashkabot",
+    "websocket"
+  ],
   "author": "Solar Team",
   "license": "MIT",
   "dependencies": {
@@ -15,7 +25,11 @@
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
-    "openai": "^4.20.1"
+    "openai": "^4.20.1",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=18.0.0"
