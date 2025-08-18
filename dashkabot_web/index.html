@@ -1,6 +1,15 @@
-<!DOCTYPE html>
-<html>
+// ✅ УЛУЧШЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЗАПИСИ
+        function toggleRecording() {
+            if (!recognition) {
+                updateStatus('❌ Распознавание речи недоступно');
+                return;
+            }
 
+            const btn = document.getElementById('recordBtn');
+            const instruction = document.querySelector('.instruction');
+
+            if<!DOCTYPE html>
+<html>
 <head>
     <title>🚀 DashkaBot Mobile</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -83,36 +92,20 @@
             font-weight: 500;
         }
 
-        .translation-area {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            min-height: 120px;
-        }
-
-        .translation-area .label {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 8px;
-        }
-
-        .translation-area .text {
-            font-size: 16px;
-            font-weight: 500;
+        /* ✅ ИСПРАВЛЕННАЯ СТРУКТУРА: */
+        .text-input-container {
+            position: relative;
             margin-bottom: 15px;
-            min-height: 24px;
         }
 
         .text-input {
             width: 100%;
-            padding: 15px;
+            padding: 15px 45px 15px 15px; /* Отступ справа для кнопок */
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 16px;
-            margin-bottom: 15px;
             resize: vertical;
             min-height: 80px;
         }
@@ -121,60 +114,49 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
-        .controls {
-            text-align: center;
-            margin-top: 30px;
+        /* 🎯 ПЛАВАЮЩИЕ КНОПКИ - НЕ ВЛИЯЮТ НА LAYOUT */
+        .floating-buttons {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 10;
         }
 
+        .micro-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            backdrop-filter: blur(5px);
+        }
 
+        .micro-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .btn-paste { background: rgba(23, 162, 184, 0.8); }
+        .btn-clear-micro { background: rgba(108, 117, 125, 0.8); }
+        .btn-copy { background: rgba(40, 167, 69, 0.8); }
+
+        /* ✅ ОСНОВНЫЕ КНОПКИ */
         .btn-group {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             justify-content: center;
-        }
-
-        /* ✅ ДОБАВИТЬ НОВЫЕ СТИЛИ: */
-        .text-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .small-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-            min-width: 60px;
-        }
-
-        .btn-paste {
-            background: #17a2b8;
-        }
-
-        .btn-clear-small {
-            background: #6c757d;
-        }
-
-        .btn-copy {
-            background: #28a745;
-        }
-
-        .small-btn:hover {
-            transform: translateY(-1px);
-            opacity: 0.9;
-        }
-
-        .small-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
         }
 
         .btn {
@@ -207,6 +189,34 @@
             transform: none;
         }
 
+        /* ✅ ИСПРАВЛЕННАЯ ОБЛАСТЬ ПЕРЕВОДА */
+        .translation-area {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            min-height: 120px;
+        }
+
+        .translation-area .label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .translation-area .text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            min-height: 24px;
+            word-wrap: break-word;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
         .record-btn {
             width: 120px;
             height: 120px;
@@ -236,17 +246,9 @@
         }
 
         @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         .instruction {
@@ -280,13 +282,8 @@
             margin-right: 5px;
         }
 
-        .connected {
-            background: #2ecc71;
-        }
-
-        .disconnected {
-            background: #e74c3c;
-        }
+        .connected { background: #2ecc71; }
+        .disconnected { background: #e74c3c; }
 
         /* Режимы работы */
         .mode-tabs {
@@ -322,7 +319,6 @@
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <div class="header">
@@ -348,591 +344,647 @@
             🟢 DashkaBot готов к работе
         </div>
 
+        <!-- ✅ ИСПРАВЛЕННЫЙ ТЕКСТОВЫЙ РЕЖИМ -->
         <div id="textMode" class="mode-content active">
-            <!-- ✅ НОВАЯ СТРУКТУРА С КНОПКАМИ: -->
-            <div class="text-controls">
-                <textarea id="textInput" class="text-input" placeholder="Введите текст для перевода..."
-                    style="flex: 1; margin-bottom: 0;"></textarea>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <button class="small-btn btn-paste" id="pasteBtn" onclick="pasteText()" title="v">
+            <div class="text-input-container">
+                <textarea 
+                    id="textInput" 
+                    class="text-input" 
+                    placeholder="Введите текст для перевода..."
+                ></textarea>
+                
+                <!-- 🎯 ПЛАВАЮЩИЕ КНОПКИ -->
+                <div class="floating-buttons">
+                    <button class="micro-btn btn-paste" onclick="pasteText()" title="Вставить">
                         v
                     </button>
-                    <button class="small-btn btn-clear-small" onclick="clearTextInput()" title="x">
-                        x
+                    <button class="micro-btn btn-clear-micro" onclick="clearTextInput()" title="Очистить">
+                        ×
                     </button>
-                    <button class="small-btn btn-copy" id="copyBtn" onclick="copyResult()" title="c">
+                    <button class="micro-btn btn-copy" onclick="copyResult()" title="Копировать">
                         c
                     </button>
                 </div>
             </div>
 
             <div class="btn-group">
+                <button class="btn btn-translate" id="translateBtn" onclick="translateText()">
+                    🔄 Перевести
+                </button>
+                <button class="btn btn-clear" onclick="clearText()">
+                    🗑️ Очистить всё
+                </button>
+            </div>
+        </div>
 
-                <!-- Режим голосового ввода -->
-                <div id="voiceMode" class="mode-content">
-                    <div class="controls">
-                        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
-                            🎤
-                        </button>
-                        <div class="instruction">Нажмите для записи</div>
-                    </div>
+        <!-- Режим голосового ввода -->
+        <div id="voiceMode" class="mode-content">
+            <div class="controls">
+                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                    🎤
+                </button>
+                <div class="instruction">Нажмите для записи</div>
+            </div>
+            
+            <!-- ✅ КНОПКИ И ДЛЯ ГОЛОСОВОГО РЕЖИМА -->
+            <div class="btn-group">
+                <button class="btn btn-translate" onclick="translateCurrentText()">
+                    🔄 Перевести
+                </button>
+                <button class="btn btn-clear" onclick="clearText()">
+                    🗑️ Очистить всё
+                </button>
+            </div>
+        </div>
+
+        <!-- ✅ ОБЩАЯ ОБЛАСТЬ ПЕРЕВОДА ДЛЯ ОБОИХ РЕЖИМОВ -->
+        <div class="translation-area">
+            <div class="label">Исходный текст:</div>
+            <div class="text" id="originalText">Введите текст или нажмите на микрофон...</div>
+
+            <div class="label">Перевод:</div>
+            <div class="text" id="translatedText">Перевод появится здесь...</div>
+        </div>
+
+        <div class="device-info">
+            <strong>Samsung Galaxy S24</strong><br>
+            Подключен через Wi-Fi<br>
+
+            <div class="connection-status">
+                <div>
+                    <span class="connection-dot" id="aiDot"></span>
+                    AI Server
                 </div>
-
-                <div class="translation-area">
-                    <div class="label">Исходный текст:</div>
-                    <div class="text" id="originalText">Введите текст или нажмите на микрофон...</div>
-
-                    <div class="label">Перевод:</div>
-                    <div class="text" id="translatedText">Перевод появится здесь...</div>
+                <div>
+                    <span class="connection-dot" id="wsDot"></span>
+                    WebSocket
                 </div>
-
-                <div class="device-info">
-                    <strong>Samsung Galaxy S24</strong><br>
-                    Подключен через Wi-Fi<br>
-
-                    <div class="connection-status">
-                        <div>
-                            <span class="connection-dot" id="aiDot"></span>
-                            AI Server
-                        </div>
-                        <div>
-                            <span class="connection-dot" id="wsDot"></span>
-                            WebSocket
-                        </div>
-                        <div>
-                            <span class="connection-dot" id="speechDot"></span>
-                            Speech API
-                        </div>
-                    </div>
+                <div>
+                    <span class="connection-dot" id="speechDot"></span>
+                    Speech API
                 </div>
             </div>
+        </div>
+    </div>
 
-            <script>
-                let currentRole = 'user';
-                let isRecording = false;
-                let recognition = null;
-                let websocket = null;
-                let currentMode = 'text';
+    <script>
+        let currentRole = 'user';
+        let isRecording = false;
+        let recognition = null;
+        let websocket = null;
+        let currentMode = 'text';
 
-                // Конфигурация серверов
-                const config = {
-                    aiServer: window.location.origin,
-                    wsServer: `wss://${window.location.host}/ws`,  // ✅ Правильный WebSocket URL
-                    enableWebSocket: true,  // ✅ Включаем WebSocket
-                    enableSpeech: true
-                };
+        // Конфигурация серверов
+        const config = {
+            aiServer: 'http://172.20.10.4:8080',
+            wsServer: 'ws://172.20.10.4:8765',
+            enableWebSocket: true,
+            enableSpeech: true
+        };
 
-                // Инициализация системы
-                function initSystem() {
-                    checkAIServer();
-                    initWebSocket();
-                    initSpeechRecognition();
-                    setRole('user');
-                    switchMode('text');
+        // Инициализация системы
+        function initSystem() {
+            checkAIServer();
+            initWebSocket();
+            initSpeechRecognition();
+            setRole('user');
+            switchMode('text');
+        }
+
+        // Переключение режимов
+        function switchMode(mode) {
+            currentMode = mode;
+
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+
+            if (mode === 'text') {
+                document.querySelector('.mode-tab:first-child').classList.add('active');
+                document.getElementById('textMode').classList.add('active');
+            } else {
+                document.querySelector('.mode-tab:last-child').classList.add('active');
+                document.getElementById('voiceMode').classList.add('active');
+            }
+        }
+
+        // ✅ УЛУЧШЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЗАПИСИ
+        function toggleRecording() {
+            if (!recognition) {
+                updateStatus('❌ Распознавание речи недоступно');
+                return;
+            }
+
+            const btn = document.getElementById('recordBtn');
+            const instruction = document.querySelector('.instruction');
+
+            if (!isRecording) {
+                // НАЧИНАЕМ ЗАПИСЬ
+                startRecording();
+                btn.textContent = '⏹️';
+                btn.classList.add('recording');
+                btn.style.background = 'linear-gradient(45deg, #c0392b, #a93226)';
+                isRecording = true;
+                instruction.textContent = 'Говорите... Нажмите ⏹️ для остановки';
+            } else {
+                // ОСТАНАВЛИВАЕМ ЗАПИСЬ
+                stopRecording();
+                btn.textContent = '🎤';
+                btn.classList.remove('recording');
+                btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+                isRecording = false;
+                instruction.textContent = 'Нажмите для записи';
+            }
+        }
+
+        function startRecording() {
+            updateStatus('🎤 Слушаю... Нажмите ⏹️ для остановки');
+            document.getElementById('originalText').textContent = 'Говорите сейчас... (нажмите ⏹️ когда закончите)';
+            document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
+
+            try {
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.start();
+            } catch (error) {
+                console.error('Failed to start recording:', error);
+                updateStatus('❌ Не удалось начать запись');
+                isRecording = false;
+
+                const btn = document.getElementById('recordBtn');
+                btn.textContent = '🎤';
+                btn.classList.remove('recording');
+            }
+        }
+
+        function stopRecording() {
+            updateStatus('⏸️ Остановлено. Обработка...');
+            isRecording = false;
+
+            const btn = document.getElementById('recordBtn');
+            btn.textContent = '🎤';
+            btn.classList.remove('recording');
+            btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+
+            if (recognition) {
+                recognition.stop();
+            }
+
+            setTimeout(() => {
+                if (!isRecording) {
+                    updateStatus('🎤 Готов к новой записи');
                 }
+            }, 2000);
+        }
 
-                // Переключение режимов
-                function switchMode(mode) {
-                    currentMode = mode;
+        // ✅ УЛУЧШЕННАЯ ОБРАБОТКА ЗАПИСИ
+        async function processRecording(text) {
+            if (!text.trim()) {
+                updateStatus('❌ Текст не распознан');
+                return;
+            }
 
-                    // Обновляем вкладки
-                    document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
-                    document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+            // Показываем распознанный текст
+            document.getElementById('originalText').textContent = text;
+            updateStatus('✅ Текст распознан! Нажмите "Перевести" или подождите...');
 
-                    if (mode === 'text') {
-                        document.querySelector('.mode-tab:first-child').classList.add('active');
-                        document.getElementById('textMode').classList.add('active');
-                    } else {
-                        document.querySelector('.mode-tab:last-child').classList.add('active');
-                        document.getElementById('voiceMode').classList.add('active');
-                    }
+            // Автоматический перевод через 2 секунды
+            setTimeout(async () => {
+                if (document.getElementById('originalText').textContent === text) {
+                    await performTranslation(text);
                 }
+            }, 2000);
+        }
+        async function pasteText() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const textInput = document.getElementById('textInput');
+                textInput.value = text;
+                textInput.focus();
+                updateStatus('📋 Текст вставлен из буфера обмена');
+                
+                // Мини-анимация кнопки
+                const btn = event.target;
+                btn.style.transform = 'scale(1.2)';
+                setTimeout(() => btn.style.transform = 'scale(1)', 150);
+            } catch (error) {
+                console.error('Paste failed:', error);
+                updateStatus('❌ Не удалось вставить текст');
+            }
+        }
 
-                // Текстовый перевод
-                async function translateText() {
-                    const text = document.getElementById('textInput').value.trim();
-                    if (!text) {
-                        updateStatus('❌ Введите текст для перевода');
-                        return;
-                    }
+        function clearTextInput() {
+            document.getElementById('textInput').value = '';
+            updateStatus('🗑️ Поле ввода очищено');
+            
+            // Мини-анимация кнопки
+            const btn = event.target;
+            btn.style.transform = 'scale(1.2)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
 
-                    const translateBtn = document.getElementById('translateBtn');
-                    translateBtn.disabled = true;
-                    translateBtn.textContent = '⏳ Переводим...';
-
-                    // Отображаем исходный текст
-                    document.getElementById('originalText').textContent = text;
-                    updateStatus('🔄 Перевожу...');
-
-                    try {
-                        // Определение направления перевода
-                        const fromLang = currentRole === 'user' ? 'RU' : 'DE';
-                        const toLang = currentRole === 'user' ? 'DE' : 'RU';
-
-                        // Отправка на AI сервер
-                        const response = await fetch(`${config.aiServer}/translate`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                text: text,
-                                source_language: fromLang,
-                                target_language: toLang
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`AI Server error: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        const translation = result.translated_text || '[Ошибка перевода]';
-
-                        // Отображение результата
-                        document.getElementById('translatedText').textContent = translation;
-                        updateStatus(`✅ Переведено! (${fromLang} → ${toLang})`);
-
-                        // Синтез речи
-                        if (config.enableSpeech && 'speechSynthesis' in window) {
-                            speakTranslation(translation, toLang.toLowerCase());
-                        }
-
-                        // Отправка через WebSocket
-                        if (websocket && websocket.readyState === WebSocket.OPEN) {
-                            const wsMessage = {
-                                type: 'translation',
-                                role: currentRole,
-                                original: text,
-                                translation: translation,
-                                from: fromLang.toLowerCase(),
-                                to: toLang.toLowerCase(),
-                                timestamp: new Date().toISOString()
-                            };
-                            websocket.send(JSON.stringify(wsMessage));
-                        }
-
-                    } catch (error) {
-                        console.error('Translation error:', error);
-                        updateStatus('❌ Ошибка перевода: ' + error.message);
-                        document.getElementById('translatedText').textContent = 'Ошибка: ' + error.message;
-                    } finally {
-                        translateBtn.disabled = false;
-                        translateBtn.textContent = '🔄 Перевести';
-                    }
-                }
-
-                // ✅ ДОБАВИТЬ НОВЫЕ ФУНКЦИИ ПЕРЕД clearText():
-
-                // Вставить текст из буфера обмена
-                async function pasteText() {
-                    try {
-                        const text = await navigator.clipboard.readText();
-                        const textInput = document.getElementById('textInput');
-                        textInput.value = text;
-                        updateStatus('📋 Текст вставлен из буфера обмена');
-                    } catch (error) {
-                        console.error('Paste failed:', error);
-                        updateStatus('❌ Не удалось вставить текст');
-                    }
-                }
-
-                // Очистить только поле ввода
-                function clearTextInput() {
-                    document.getElementById('textInput').value = '';
-                    updateStatus('🗑️ Поле ввода очищено');
-                }
-
-                // Копировать результат перевода
-                async function copyResult() {
-                    const resultText = document.getElementById('translatedText').textContent;
-                    if (resultText && resultText !== 'Перевод появится здесь...') {
-                        try {
-                            await navigator.clipboard.writeText(resultText);
-                            updateStatus('📄 Перевод скопирован в буфер обмена');
-                        } catch (error) {
-                            console.error('Copy failed:', error);
-                            updateStatus('❌ Не удалось скопировать текст');
-                        }
-                    } else {
-                        updateStatus('❌ Нет текста для копирования');
-                    }
-                }
-
-                // Очистка текста
-                function clearText() {
-                    document.getElementById('textInput').value = '';
-                    document.getElementById('originalText').textContent = 'Введите текст или нажмите на микрофон...';
-                    document.getElementById('translatedText').textContent = 'Перевод появится здесь...';
-                    updateStatus('🟢 DashkaBot готов к работе');
-                }
-
-                // Проверка AI сервера
-                async function checkAIServer() {
-                    try {
-                        const response = await fetch(`${config.aiServer}/health`);
-                        const data = await response.json();
-                        updateConnectionStatus('ai', true);
-                        console.log('AI Server connected:', data);
-                    } catch (error) {
-                        updateConnectionStatus('ai', false);
-                        console.error('AI Server not available:', error);
-                    }
-                }
-
-                // Инициализация WebSocket
-                function initWebSocket() {
-                    if (!config.enableWebSocket) return;
-
-                    try {
-                        websocket = new WebSocket(config.wsServer);
-
-                        websocket.onopen = function () {
-                            updateConnectionStatus('ws', true);
-                            console.log('WebSocket connected');
-                        };
-
-                        websocket.onclose = function () {
-                            updateConnectionStatus('ws', false);
-                            console.log('WebSocket disconnected');
-                        };
-
-                        websocket.onmessage = function (event) {
-                            const data = JSON.parse(event.data);
-                            handleWebSocketMessage(data);
-                        };
-
-                        websocket.onerror = function (error) {
-                            updateConnectionStatus('ws', false);
-                            console.error('WebSocket error:', error);
-                        };
-                    } catch (error) {
-                        updateConnectionStatus('ws', false);
-                        console.error('WebSocket init failed:', error);
-                    }
-                }
-
-                // Инициализация распознавания речи
-                function initSpeechRecognition() {
-                    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                        updateConnectionStatus('speech', false);
-                        console.error('Speech recognition not supported');
-                        return;
-                    }
-
-                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    recognition = new SpeechRecognition();
-
-                    recognition.continuous = false;
-                    recognition.interimResults = true;
-
-                    recognition.onstart = function () {
-                        updateConnectionStatus('speech', true);
-                        console.log('Speech recognition started');
-                    };
-
-                    recognition.onresult = function (event) {
-                        let finalTranscript = '';
-                        let interimTranscript = '';
-
-                        for (let i = event.resultIndex; i < event.results.length; i++) {
-                            const transcript = event.results[i][0].transcript;
-                            if (event.results[i].isFinal) {
-                                finalTranscript += transcript;
-                            } else {
-                                interimTranscript += transcript;
-                            }
-                        }
-
-                        if (finalTranscript) {
-                            processRecording(finalTranscript.trim());
-                        } else if (interimTranscript) {
-                            document.getElementById('originalText').textContent =
-                                interimTranscript + ' (говорите...)';
-                        }
-                    };
-
-                    recognition.onerror = function (event) {
-                        console.error('Speech recognition error:', event.error);
-                        updateStatus(`❌ Ошибка: ${event.error}`);
-                        stopRecording();
-                    };
-
-                    recognition.onend = function () {
-                        if (isRecording) {
-                            stopRecording();
-                        }
-                    };
-                }
-
-                // Установка роли
-                function setRole(role) {
-                    currentRole = role;
-                    document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-                    document.querySelector('.role-btn.' + role).classList.add('active');
-
-                    const roleName = role === 'user' ? 'Пользователь 🇷🇺' : 'Steuerberater 🇩🇪';
-                    updateStatus('Роль: ' + roleName);
-
-                    // Настройка языка распознавания
-                    if (recognition) {
-                        recognition.lang = role === 'user' ? 'ru-RU' : 'de-DE';
-                    }
-                }
-
-                // 🎤 УЛУЧШЕНИЕ: Кнопка остановки записи
-                // Добавить в dashkabot_web/index.html в раздел JavaScript
-
-                // Переключение записи - УЛУЧШЕННАЯ ВЕРСИЯ
-                function toggleRecording() {
-                    if (!recognition) {
-                        updateStatus('❌ Распознавание речи недоступно');
-                        return;
-                    }
-
-                    const btn = document.getElementById('recordBtn');
-
-                    if (!isRecording) {
-                        // НАЧИНАЕМ ЗАПИСЬ
-                        startRecording();
-                        btn.textContent = '⏹️';  // Кнопка СТОП
-                        btn.classList.add('recording');
-                        btn.style.background = 'linear-gradient(45deg, #c0392b, #a93226)';
-                        isRecording = true;
-
-                        // Меняем инструкцию
-                        document.querySelector('.instruction').textContent = 'Говорите... Нажмите для остановки';
-
-                    } else {
-                        // ОСТАНАВЛИВАЕМ ЗАПИСЬ  
-                        stopRecording();
-                        btn.textContent = '🎤';  // Кнопка МИКРОФОН
-                        btn.classList.remove('recording');
-                        btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
-                        isRecording = false;
-
-                        // Возвращаем инструкцию
-                        document.querySelector('.instruction').textContent = 'Нажмите для записи';
-                    }
-                }
-
-                // Начало записи - УЛУЧШЕННАЯ ВЕРСИЯ
-                function startRecording() {
-                    updateStatus('🎤 Слушаю... Нажмите ⏹️ для остановки');
-                    document.getElementById('originalText').textContent = 'Говорите сейчас... (нажмите ⏹️ когда закончите)';
-                    document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
-
-                    try {
-                        // Настраиваем непрерывную запись
-                        recognition.continuous = true;  // ✅ ВАЖНО: Непрерывная запись
-                        recognition.interimResults = true;
-                        recognition.start();
-                    } catch (error) {
-                        console.error('Failed to start recording:', error);
-                        updateStatus('❌ Не удалось начать запись');
-                        isRecording = false;
-
-                        // Возвращаем кнопку в исходное состояние
-                        const btn = document.getElementById('recordBtn');
-                        btn.textContent = '🎤';
-                        btn.classList.remove('recording');
-                    }
-                }
-
-                // Остановка записи - УЛУЧШЕННАЯ ВЕРСИЯ  
-                function stopRecording() {
-                    updateStatus('⏸️ Остановлено. Обработка...');
-                    isRecording = false;
-
-                    const btn = document.getElementById('recordBtn');
-                    btn.textContent = '🎤';
-                    btn.classList.remove('recording');
-                    btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
-
-                    if (recognition) {
-                        recognition.stop();
-                    }
-
-                    // Показываем что запись остановлена пользователем
+        async function copyResult() {
+            const resultText = document.getElementById('translatedText').textContent;
+            if (resultText && resultText !== 'Перевод появится здесь...') {
+                try {
+                    await navigator.clipboard.writeText(resultText);
+                    updateStatus('📄 Перевод скопирован в буфер обмена');
+                    
+                    // Визуальная обратная связь
+                    const btn = event.target;
+                    btn.style.background = 'rgba(40, 167, 69, 1)';
+                    btn.style.transform = 'scale(1.2)';
                     setTimeout(() => {
-                        if (!isRecording) {  // Если действительно остановили
-                            updateStatus('🎤 Готов к новой записи');
-                        }
-                    }, 2000);
+                        btn.style.background = 'rgba(40, 167, 69, 0.8)';
+                        btn.style.transform = 'scale(1)';
+                    }, 200);
+                } catch (error) {
+                    console.error('Copy failed:', error);
+                    updateStatus('❌ Не удалось скопировать текст');
+                }
+            } else {
+                updateStatus('❌ Нет текста для копирования');
+            }
+        }
+
+        // ✅ УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ПЕРЕВОДА (для обоих режимов)
+        async function translateCurrentText() {
+            // Получаем текст из поля ввода или из распознанного текста
+            const textFromInput = document.getElementById('textInput').value.trim();
+            const textFromOriginal = document.getElementById('originalText').textContent;
+            
+            let text = '';
+            if (currentMode === 'text' && textFromInput) {
+                text = textFromInput;
+            } else if (textFromOriginal && textFromOriginal !== 'Введите текст или нажмите на микрофон...') {
+                text = textFromOriginal;
+            }
+            
+            if (!text) {
+                updateStatus('❌ Нет текста для перевода');
+                return;
+            }
+
+            // Используем существующую логику перевода
+            await performTranslation(text);
+        }
+
+        // ✅ ОСНОВНАЯ ФУНКЦИЯ ПЕРЕВОДА (вынесена отдельно)
+        async function performTranslation(text) {
+            const translateBtns = document.querySelectorAll('.btn-translate');
+            translateBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = '⏳ Переводим...';
+            });
+
+            document.getElementById('originalText').textContent = text;
+            updateStatus('🔄 Перевожу...');
+
+            try {
+                const fromLang = currentRole === 'user' ? 'RU' : 'DE';
+                const toLang = currentRole === 'user' ? 'DE' : 'RU';
+
+                const response = await fetch(`${config.aiServer}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_language: fromLang,
+                        target_language: toLang
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`AI Server error: ${response.status}`);
                 }
 
+                const result = await response.json();
+                const translation = result.translated_text || '[Ошибка перевода]';
 
+                document.getElementById('translatedText').textContent = translation;
+                updateStatus(`✅ Переведено! (${fromLang} → ${toLang})`);
 
-                async function processRecording(text) {
-                    if (!text.trim()) {
-                        updateStatus('❌ Текст не распознан');
-                        return;
-                    }
-
-                    document.getElementById('originalText').textContent = text;
-                    updateStatus('🔄 Перевожу...');
-
-                    try {
-                        const fromLang = currentRole === 'user' ? 'RU' : 'DE';
-                        const toLang = currentRole === 'user' ? 'DE' : 'RU';
-
-                        const response = await fetch(`${config.aiServer}/translate`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                text: text,
-                                source_language: fromLang,
-                                target_language: toLang
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`AI Server error: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        const translation = result.translated_text || '[Ошибка перевода]';
-
-                        document.getElementById('translatedText').textContent = translation;
-                        updateStatus('✅ Готово!');
-
-                        if (config.enableSpeech && 'speechSynthesis' in window) {
-                            speakTranslation(translation, toLang.toLowerCase());
-                        }
-
-                        if (websocket && websocket.readyState === WebSocket.OPEN) {
-                            const wsMessage = {
-                                type: 'translation',
-                                role: currentRole,
-                                original: text,
-                                translation: translation,
-                                from: fromLang.toLowerCase(),
-                                to: toLang.toLowerCase(),
-                                timestamp: new Date().toISOString()
-                            };
-                            websocket.send(JSON.stringify(wsMessage));
-                        }
-
-                        setTimeout(() => {
-                            updateStatus('🎤 Готов к записи');
-                        }, 3000);
-
-                    } catch (error) {
-                        console.error('Translation error:', error);
-                        updateStatus('❌ Ошибка перевода');
-                        document.getElementById('translatedText').textContent =
-                            'Ошибка: ' + error.message;
-
-                        setTimeout(() => {
-                            updateStatus('🎤 Готов к записи');
-                        }, 3000);
-                    }
+                if (config.enableSpeech && 'speechSynthesis' in window) {
+                    speakTranslation(translation, toLang.toLowerCase());
                 }
 
-                // Синтез речи
-                // Синтез речи - СУПЕРКОМАНДА UPGRADE!
-                function speakTranslation(text, language) {
-                    console.log('🔊 Запуск TTS:', text, language);
-
-                    // 🚀 ПРИОРИТЕТ: Нативный Android TTS
-                    if (window.DashkaBotAndroid && window.DashkaBotAndroid.speakText) {
-                        console.log('📱 Используем нативный Android TTS');
-                        window.DashkaBotAndroid.speakText(text, language);
-                        updateStatus('🔊 Произношу через Android TTS...');
-                        setTimeout(() => updateStatus('✅ Готово!'), 3000);
-                        return;
-                    }
-
-                    // 🌐 FALLBACK: Browser TTS
-                    if (!('speechSynthesis' in window)) {
-                        console.log('❌ Speech Synthesis недоступен');
-                        updateStatus('❌ Озвучивание недоступно');
-                        return;
-                    }
-
-                    console.log('🌐 Используем браузерный TTS');
-                    speechSynthesis.cancel();
-
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.lang = language === 'de' ? 'de-DE' :
-                        language === 'en' ? 'en-US' :
-                        language === 'es' ? 'es-ES' :
-                            language === 'pl' ? 'pl-PL' :
-                            language === 'cs' ? 'cs-CZ' :
-                            language === 'lt' ? 'lt-LT' :
-                            language === 'lv' ? 'lv-LV' :
-                            language === 'no' ? 'no-NO' :
-                            'ru-RU';
-                    utterance.rate = 0.8;
-                    utterance.pitch = 1.0;
-                    utterance.volume = 1.0;
-
-                    utterance.onstart = () => updateStatus('🔊 Произношу перевод...');
-                    utterance.onend = () => updateStatus('✅ Готово!');
-                    utterance.onerror = (event) => {
-                        console.error('Speech synthesis error:', event.error);
-                        updateStatus('❌ Ошибка озвучивания');
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    const wsMessage = {
+                        type: 'translation',
+                        role: currentRole,
+                        original: text,
+                        translation: translation,
+                        from: fromLang.toLowerCase(),
+                        to: toLang.toLowerCase(),
+                        timestamp: new Date().toISOString()
                     };
-
-                    speechSynthesis.speak(utterance);
+                    websocket.send(JSON.stringify(wsMessage));
                 }
 
-                // Обработка WebSocket сообщений
-                function handleWebSocketMessage(data) {
-                    if (data.type === 'translation' && data.role !== currentRole) {
-                        document.getElementById('originalText').textContent =
-                            `[${data.role}]: ${data.original}`;
-                        document.getElementById('translatedText').textContent = data.translation;
-                        updateStatus(`📨 Получен перевод от ${data.role}`);
-                    }
-                }
+            } catch (error) {
+                console.error('Translation error:', error);
+                updateStatus('❌ Ошибка перевода: ' + error.message);
+                document.getElementById('translatedText').textContent = 'Ошибка: ' + error.message;
+            } finally {
+                translateBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Перевести';
+                });
+            }
+        }
 
-                // Обновление статуса подключений
-                function updateConnectionStatus(service, connected) {
-                    const dot = document.getElementById(service + 'Dot');
-                    if (dot) {
-                        dot.className = `connection-dot ${connected ? 'connected' : 'disconnected'}`;
-                    }
-                }
+        // Текстовый перевод (старая функция - теперь использует универсальную)
+        async function translateText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                updateStatus('❌ Введите текст для перевода');
+                return;
+            }
+            await performTranslation(text);
+        }
 
-                // Обновление статуса
-                function updateStatus(message) {
-                    document.getElementById('status').textContent = message;
-                }
+        function clearText() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('originalText').textContent = 'Введите текст или нажмите на микрофон...';
+            document.getElementById('translatedText').textContent = 'Перевод появится здесь...';
+            updateStatus('🟢 DashkaBot готов к работе');
+        }
 
-                // Инициализация при загрузке
-                window.onload = function () {
-                    initSystem();
-                    updateStatus('🟢 DashkaBot готов к работе');
+        // Проверка AI сервера
+        async function checkAIServer() {
+            try {
+                const response = await fetch(`${config.aiServer}/health`);
+                const data = await response.json();
+                updateConnectionStatus('ai', true);
+                console.log('AI Server connected:', data);
+            } catch (error) {
+                updateConnectionStatus('ai', false);
+                console.error('AI Server not available:', error);
+            }
+        }
+
+        // Инициализация WebSocket
+        function initWebSocket() {
+            if (!config.enableWebSocket) return;
+
+            try {
+                websocket = new WebSocket(config.wsServer);
+
+                websocket.onopen = function () {
+                    updateConnectionStatus('ws', true);
+                    console.log('WebSocket connected');
                 };
 
-                // Переподключение WebSocket при потере соединения
-                setInterval(() => {
-                    if (config.enableWebSocket && (!websocket || websocket.readyState === WebSocket.CLOSED)) {
-                        console.log('Reconnecting WebSocket...');
-                        initWebSocket();
+                websocket.onclose = function () {
+                    updateConnectionStatus('ws', false);
+                    console.log('WebSocket disconnected');
+                };
+
+                websocket.onmessage = function (event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                websocket.onerror = function (error) {
+                    updateConnectionStatus('ws', false);
+                    console.error('WebSocket error:', error);
+                };
+            } catch (error) {
+                updateConnectionStatus('ws', false);
+                console.error('WebSocket init failed:', error);
+            }
+        }
+
+        // Инициализация распознавания речи
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                updateConnectionStatus('speech', false);
+                console.error('Speech recognition not supported');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+
+            recognition.continuous = false;
+            recognition.interimResults = true;
+
+            recognition.onstart = function () {
+                updateConnectionStatus('speech', true);
+                console.log('Speech recognition started');
+            };
+
+            recognition.onresult = function (event) {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
                     }
-                }, 5000);
+                }
 
-                // Периодическая проверка AI сервера
-                setInterval(() => {
-                    checkAIServer();
-                }, 10000);
+                if (finalTranscript) {
+                    processRecording(finalTranscript.trim());
+                } else if (interimTranscript) {
+                    document.getElementById('originalText').textContent =
+                        interimTranscript + ' (говорите...)';
+                }
+            };
 
-                // Enter для перевода в текстовом режиме
-                document.addEventListener('DOMContentLoaded', function () {
-                    const textInput = document.getElementById('textInput');
-                    if (textInput) {
-                        textInput.addEventListener('keypress', function (e) {
-                            if (e.key === 'Enter' && e.ctrlKey) {
-                                translateText();
-                            }
-                        });
+            recognition.onerror = function (event) {
+                console.error('Speech recognition error:', event.error);
+                updateStatus(`❌ Ошибка: ${event.error}`);
+                stopRecording();
+            };
+
+            recognition.onend = function () {
+                if (isRecording) {
+                    stopRecording();
+                }
+            };
+        }
+
+        // Установка роли
+        function setRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.role-btn.' + role).classList.add('active');
+
+            const roleName = role === 'user' ? 'Пользователь 🇷🇺' : 'Steuerberater 🇩🇪';
+            updateStatus('Роль: ' + roleName);
+
+            if (recognition) {
+                recognition.lang = role === 'user' ? 'ru-RU' : 'de-DE';
+            }
+        }
+
+        // Переключение записи
+        function toggleRecording() {
+            if (!recognition) {
+                updateStatus('❌ Распознавание речи недоступно');
+                return;
+            }
+
+            const btn = document.getElementById('recordBtn');
+
+            if (!isRecording) {
+                startRecording();
+                btn.textContent = '⏹️';
+                btn.classList.add('recording');
+                btn.style.background = 'linear-gradient(45deg, #c0392b, #a93226)';
+                isRecording = true;
+                document.querySelector('.instruction').textContent = 'Говорите... Нажмите для остановки';
+            } else {
+                stopRecording();
+                btn.textContent = '🎤';
+                btn.classList.remove('recording');
+                btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+                isRecording = false;
+                document.querySelector('.instruction').textContent = 'Нажмите для записи';
+            }
+        }
+
+        function startRecording() {
+            updateStatus('🎤 Слушаю... Нажмите ⏹️ для остановки');
+            document.getElementById('originalText').textContent = 'Говорите сейчас... (нажмите ⏹️ когда закончите)';
+            document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
+
+            try {
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.start();
+            } catch (error) {
+                console.error('Failed to start recording:', error);
+                updateStatus('❌ Не удалось начать запись');
+                isRecording = false;
+
+                const btn = document.getElementById('recordBtn');
+                btn.textContent = '🎤';
+                btn.classList.remove('recording');
+            }
+        }
+
+        function stopRecording() {
+            updateStatus('⏸️ Остановлено. Обработка...');
+            isRecording = false;
+
+            const btn = document.getElementById('recordBtn');
+            btn.textContent = '🎤';
+            btn.classList.remove('recording');
+            btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+
+            if (recognition) {
+                recognition.stop();
+            }
+
+            setTimeout(() => {
+                if (!isRecording) {
+                    updateStatus('🎤 Готов к новой записи');
+                }
+            }, 2000);
+        }
+
+        // ✅ УЛУЧШЕННЫЕ ФУНКЦИИ БУФЕРА ОБМЕНА
+
+        // Синтез речи
+        function speakTranslation(text, language) {
+            console.log('🔊 Запуск TTS:', text, language);
+
+            if (window.DashkaBotAndroid && window.DashkaBotAndroid.speakText) {
+                console.log('📱 Используем нативный Android TTS');
+                window.DashkaBotAndroid.speakText(text, language);
+                updateStatus('🔊 Произношу через Android TTS...');
+                setTimeout(() => updateStatus('✅ Готово!'), 3000);
+                return;
+            }
+
+            if (!('speechSynthesis' in window)) {
+                console.log('❌ Speech Synthesis недоступен');
+                updateStatus('❌ Озвучивание недоступно');
+                return;
+            }
+
+            console.log('🌐 Используем браузерный TTS');
+            speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = language === 'de' ? 'de-DE' :
+                language === 'en' ? 'en-US' :
+                language === 'es' ? 'es-ES' :
+                language === 'pl' ? 'pl-PL' :
+                language === 'cs' ? 'cs-CZ' :
+                language === 'lt' ? 'lt-LT' :
+                language === 'lv' ? 'lv-LV' :
+                language === 'no' ? 'no-NO' :
+                'ru-RU';
+            utterance.rate = 0.8;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onstart = () => updateStatus('🔊 Произношу перевод...');
+            utterance.onend = () => updateStatus('✅ Готово!');
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event.error);
+                updateStatus('❌ Ошибка озвучивания');
+            };
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function handleWebSocketMessage(data) {
+            if (data.type === 'translation' && data.role !== currentRole) {
+                document.getElementById('originalText').textContent = `[${data.role}]: ${data.original}`;
+                document.getElementById('translatedText').textContent = data.translation;
+                updateStatus(`📨 Получен перевод от ${data.role}`);
+            }
+        }
+
+        function updateConnectionStatus(service, connected) {
+            const dot = document.getElementById(service + 'Dot');
+            if (dot) {
+                dot.className = `connection-dot ${connected ? 'connected' : 'disconnected'}`;
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Инициализация при загрузке
+        window.onload = function () {
+            initSystem();
+            updateStatus('🟢 DashkaBot готов к работе');
+        };
+
+        // Переподключение WebSocket при потере соединения
+        setInterval(() => {
+            if (config.enableWebSocket && (!websocket || websocket.readyState === WebSocket.CLOSED)) {
+                console.log('Reconnecting WebSocket...');
+                initWebSocket();
+            }
+        }, 5000);
+
+        // Периодическая проверка AI сервера
+        setInterval(() => {
+            checkAIServer();
+        }, 10000);
+
+        // Enter для перевода в текстовом режиме
+        document.addEventListener('DOMContentLoaded', function () {
+            const textInput = document.getElementById('textInput');
+            if (textInput) {
+                textInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                        translateText();
                     }
                 });
-            </script>
+            }
+        });
+    </script>
 </body>
-
 </html>
