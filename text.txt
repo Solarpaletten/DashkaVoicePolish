@@ -1,0 +1,7 @@
+git add .
+
+# Коммит с описанием
+git commit -m "🎉 Final DashkaBot Cloud: WebSocket + Clean Routes + Copy/Paste UI"
+
+# Отправляем в GitHub
+git push origin main
