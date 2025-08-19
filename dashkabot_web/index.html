@@ -1,14 +1,4 @@
-// ✅ УЛУЧШЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЗАПИСИ
-        function toggleRecording() {
-            if (!recognition) {
-                updateStatus('❌ Распознавание речи недоступно');
-                return;
-            }
-
-            const btn = document.getElementById('recordBtn');
-            const instruction = document.querySelector('.instruction');
-
-            if<!DOCTYPE html>
+if<!DOCTYPE html>
 <html>
 <head>
     <title>🚀 DashkaBot Mobile</title>
@@ -434,10 +424,10 @@
         let websocket = null;
         let currentMode = 'text';
 
-        // Конфигурация серверов
+        // Конфигурация серверов - ИСПРАВЛЕННЫЕ URL
         const config = {
-            aiServer: 'http://172.20.10.4:8080',
-            wsServer: 'ws://172.20.10.4:8765',
+            aiServer: window.location.origin, // Используем текущий домен
+            wsServer: `ws://${window.location.hostname}:8765`, // WebSocket на порту 8765
             enableWebSocket: true,
             enableSpeech: true
         };
@@ -467,7 +457,7 @@
             }
         }
 
-        // ✅ УЛУЧШЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЗАПИСИ
+        // ✅ УЛУЧШЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЗАПИСИ - ПОЛНЫЙ КОНТРОЛЬ
         function toggleRecording() {
             if (!recognition) {
                 updateStatus('❌ Распознавание речи недоступно');
@@ -478,82 +468,81 @@
             const instruction = document.querySelector('.instruction');
 
             if (!isRecording) {
-                // НАЧИНАЕМ ЗАПИСЬ
+                // 🎤 НАЧИНАЕМ ЗАПИСЬ
                 startRecording();
                 btn.textContent = '⏹️';
                 btn.classList.add('recording');
                 btn.style.background = 'linear-gradient(45deg, #c0392b, #a93226)';
                 isRecording = true;
                 instruction.textContent = 'Говорите... Нажмите ⏹️ для остановки';
+                
+                // ✅ СБРАСЫВАЕМ ОБЛАСТИ ТЕКСТА
+                document.getElementById('originalText').textContent = 'Слушаю... Начинайте говорить';
+                document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
+                
             } else {
-                // ОСТАНАВЛИВАЕМ ЗАПИСЬ
+                // ⏹️ ОСТАНАВЛИВАЕМ ЗАПИСЬ
                 stopRecording();
                 btn.textContent = '🎤';
                 btn.classList.remove('recording');
                 btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
                 isRecording = false;
-                instruction.textContent = 'Нажмите для записи';
+                instruction.textContent = 'Нажмите для новой записи';
+                
+                // ✅ ГОТОВИМ К ПЕРЕВОДУ
+                const recordedText = document.getElementById('originalText').textContent;
+                if (recordedText && recordedText !== 'Слушаю... Начинайте говорить') {
+                    updateStatus('✅ Запись остановлена. Нажмите "Перевести" или подождите...');
+                    
+                    // Автоперевод через 3 секунды
+                    setTimeout(() => {
+                        if (!isRecording && recordedText === document.getElementById('originalText').textContent) {
+                            performTranslation(recordedText);
+                        }
+                    }, 3000);
+                } else {
+                    updateStatus('❌ Текст не записан');
+                }
             }
         }
 
         function startRecording() {
-            updateStatus('🎤 Слушаю... Нажмите ⏹️ для остановки');
-            document.getElementById('originalText').textContent = 'Говорите сейчас... (нажмите ⏹️ когда закончите)';
-            document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
-
+            updateStatus('🎤 Запись началась... Говорите сколько угодно времени');
+            
             try {
-                recognition.continuous = true;
-                recognition.interimResults = true;
                 recognition.start();
             } catch (error) {
                 console.error('Failed to start recording:', error);
-                updateStatus('❌ Не удалось начать запись');
+                updateStatus('❌ Не удалось начать запись: ' + error.message);
                 isRecording = false;
 
+                // Возвращаем кнопку в исходное состояние
                 const btn = document.getElementById('recordBtn');
                 btn.textContent = '🎤';
                 btn.classList.remove('recording');
+                btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
             }
         }
 
         function stopRecording() {
-            updateStatus('⏸️ Остановлено. Обработка...');
+            updateStatus('⏹️ Запись остановлена. Обработка текста...');
             isRecording = false;
 
-            const btn = document.getElementById('recordBtn');
-            btn.textContent = '🎤';
-            btn.classList.remove('recording');
-            btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
-
             if (recognition) {
-                recognition.stop();
+                recognition.stop(); // Полностью останавливаем
             }
 
-            setTimeout(() => {
-                if (!isRecording) {
-                    updateStatus('🎤 Готов к новой записи');
-                }
-            }, 2000);
-        }
-
-        // ✅ УЛУЧШЕННАЯ ОБРАБОТКА ЗАПИСИ
-        async function processRecording(text) {
-            if (!text.trim()) {
-                updateStatus('❌ Текст не распознан');
-                return;
+            // Получаем итоговый текст
+            const finalText = document.getElementById('originalText').textContent;
+            if (finalText && finalText !== 'Слушаю... Начинайте говорить' && finalText.trim()) {
+                updateStatus('✅ Готово! Можете нажать "Перевести" или подождать автоперевод');
+            } else {
+                updateStatus('❌ Текст не распознан. Попробуйте еще раз');
             }
-
-            // Показываем распознанный текст
-            document.getElementById('originalText').textContent = text;
-            updateStatus('✅ Текст распознан! Нажмите "Перевести" или подождите...');
-
-            // Автоматический перевод через 2 секунды
-            setTimeout(async () => {
-                if (document.getElementById('originalText').textContent === text) {
-                    await performTranslation(text);
-                }
-            }, 2000);
         }
+
+        // ✅ УБИРАЕМ АВТОМАТИЧЕСКУЮ ОБРАБОТКУ - ТОЛЬКО РУЧНАЯ
+        // (функция processRecording больше не нужна)
         async function pasteText() {
             try {
                 const text = await navigator.clipboard.readText();
@@ -711,16 +700,32 @@
             updateStatus('🟢 DashkaBot готов к работе');
         }
 
-        // Проверка AI сервера
+        // ✅ ИСПРАВЛЕННАЯ ПРОВЕРКА AI СЕРВЕРА
         async function checkAIServer() {
             try {
-                const response = await fetch(`${config.aiServer}/health`);
-                const data = await response.json();
-                updateConnectionStatus('ai', true);
-                console.log('AI Server connected:', data);
+                // Пробуем подключиться к API
+                const response = await fetch(`${config.aiServer}/api/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateConnectionStatus('ai', true);
+                    console.log('✅ AI Server connected:', data);
+                } else {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
             } catch (error) {
                 updateConnectionStatus('ai', false);
-                console.error('AI Server not available:', error);
+                console.error('❌ AI Server not available:', error);
+                
+                // Пробуем альтернативные endpoints
+                try {
+                    const altResponse = await fetch(`${config.aiServer}/health`);
+                    if (altResponse.ok) {
+                        updateConnectionStatus('ai', true);
+                        console.log('✅ AI Server connected via /health');
+                    }
+                } catch (altError) {
+                    console.error('❌ Alternative endpoint also failed:', altError);
+                }
             }
         }
 
@@ -756,7 +761,7 @@
             }
         }
 
-        // Инициализация распознавания речи
+        // ✅ ИСПРАВЛЕНИЕ РАСПОЗНАВАНИЯ РЕЧИ - БЕЗ АВТОСТОПА
         function initSpeechRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 updateConnectionStatus('speech', false);
@@ -767,44 +772,63 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
 
-            recognition.continuous = false;
-            recognition.interimResults = true;
-
+            // ✅ НАСТРОЙКИ ДЛЯ ДЛИННОЙ ЗАПИСИ
+            recognition.continuous = true;        // Непрерывная запись ✅
+            recognition.interimResults = true;    // Промежуточные результаты ✅
+            recognition.maxAlternatives = 1;      // Один вариант распознавания
+            
             recognition.onstart = function () {
                 updateConnectionStatus('speech', true);
-                console.log('Speech recognition started');
+                console.log('🎤 Speech recognition started - CONTINUOUS MODE');
+                updateStatus('🎤 Запись началась... Говорите сколько угодно');
             };
 
             recognition.onresult = function (event) {
                 let finalTranscript = '';
                 let interimTranscript = '';
 
-                for (let i = event.resultIndex; i < event.results.length; i++) {
+                // ✅ СОБИРАЕМ ВЕСЬ ТЕКСТ (а не только новый)
+                for (let i = 0; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
+                        finalTranscript += transcript + ' ';
                     } else {
                         interimTranscript += transcript;
                     }
                 }
 
-                if (finalTranscript) {
-                    processRecording(finalTranscript.trim());
-                } else if (interimTranscript) {
-                    document.getElementById('originalText').textContent =
-                        interimTranscript + ' (говорите...)';
+                // ✅ ПОКАЗЫВАЕМ НАКОПЛЕННЫЙ ТЕКСТ
+                const currentText = finalTranscript + interimTranscript;
+                if (currentText.trim()) {
+                    document.getElementById('originalText').textContent = currentText;
+                    updateStatus('🎤 Записываю... Нажмите ⏹️ когда закончите');
                 }
             };
 
             recognition.onerror = function (event) {
                 console.error('Speech recognition error:', event.error);
+                
+                // ✅ НЕ ОСТАНАВЛИВАЕМ ПРИ НЕЗНАЧИТЕЛЬНЫХ ОШИБКАХ
+                if (event.error === 'no-speech' || event.error === 'audio-capture') {
+                    updateStatus('🔇 Не слышу речь... Продолжайте говорить');
+                    return; // Не останавливаем запись
+                }
+                
                 updateStatus(`❌ Ошибка: ${event.error}`);
                 stopRecording();
             };
 
             recognition.onend = function () {
+                console.log('🔚 Recognition ended');
+                // ✅ ТОЛЬКО ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ ОСТАНОВИЛ ВРУЧНУЮ
                 if (isRecording) {
-                    stopRecording();
+                    console.log('🔄 Перезапускаем запись...');
+                    try {
+                        recognition.start(); // Автоматически перезапускаем
+                    } catch (err) {
+                        console.log('Cannot restart:', err);
+                        stopRecording();
+                    }
                 }
             };
         }

@@ -6,6 +6,7 @@ const fs = require('fs');
 const { UnifiedTranslationService } = require('./unifiedTranslationService');
 const WebSocket = require('ws');
 const http = require('http');
+require('dotenv').config();
 
 class DashkaBotNodeServer {
   constructor() {
