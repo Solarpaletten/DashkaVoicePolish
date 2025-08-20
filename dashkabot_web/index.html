@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🚀 DashkaBot Mobile</title>
+    <title>🚀 DashkaBot English</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <style>
@@ -313,15 +313,15 @@
     <div class="container">
         <div class="header">
             <h1>🚀 DashkaBot</h1>
-            <p>Galaxy S24 - Голосовой переводчик</p>
+            <p>Galaxy S24 - Russian ↔ English Voice Translator</p>
         </div>
 
         <div class="role-selector">
             <button class="role-btn user active" onclick="setRole('user')">
-                🇷🇺 Пользователь
+                🇷🇺 Russian Speaker
             </button>
             <button class="role-btn steuerberater" onclick="setRole('steuerberater')">
-                🇩🇪 Steuerberater
+                🇬🇧 English Speaker
             </button>
         </div>
 
@@ -628,8 +628,8 @@
             updateStatus('🔄 Перевожу...');
 
             try {
-                const fromLang = currentRole === 'user' ? 'RU' : 'DE';
-                const toLang = currentRole === 'user' ? 'DE' : 'RU';
+                const fromLang = currentRole === 'user' ? 'RU' : 'EN';
+                const toLang = currentRole === 'user' ? 'EN' : 'RU';
 
                 const response = await fetch(`${config.aiServer}/translate`, {
                     method: 'POST',
@@ -807,7 +807,7 @@
             recognition.onerror = function (event) {
                 console.error('Speech recognition error:', event.error);
                 
-                // ✅ НЕ ОСТАНАВЛИВАЕМ ПРИ НЕЗНАЧИТЕЛЬНЫХ ОШИБКАХ
+                //НЕ ОСТАНАВЛИВАЕМ ПРИ НЕЗНАЧИТЕЛЬНЫХ ОШИБКАХ
                 if (event.error === 'no-speech' || event.error === 'audio-capture') {
                     updateStatus('🔇 Не слышу речь... Продолжайте говорить');
                     return; // Не останавливаем запись
@@ -819,7 +819,7 @@
 
             recognition.onend = function () {
                 console.log('🔚 Recognition ended');
-                // ✅ ТОЛЬКО ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ ОСТАНОВИЛ ВРУЧНУЮ
+                //ТОЛЬКО ЕСЛИ НЕ ОСТАНОВИЛ ВРУЧНУЮ
                 if (isRecording) {
                     console.log('🔄 Перезапускаем запись...');
                     try {
@@ -838,11 +838,11 @@
             document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector('.role-btn.' + role).classList.add('active');
 
-            const roleName = role === 'user' ? 'Пользователь 🇷🇺' : 'Steuerberater 🇩🇪';
+            const roleName = role === 'user' ? 'Russian Speaker 🇷🇺' : 'English Speaker 🇬🇧';
             updateStatus('Роль: ' + roleName);
 
             if (recognition) {
-                recognition.lang = role === 'user' ? 'ru-RU' : 'de-DE';
+                recognition.lang = role === 'user' ? 'ru-RU' : 'en-US';
             }
         }
 

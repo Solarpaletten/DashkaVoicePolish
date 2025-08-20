@@ -14,9 +14,9 @@
     "api_endpoint": "http://localhost:8080"
   },
   "translation": {
-    "default_source": "ru",
-    "default_target": "de",
-    "supported_languages": ["ru", "de", "en"],
+    "default_source": "ru",     
+    "default_target": "en",    
+    "supported_languages": ["ru", "en", "de"],
     "confidence_threshold": 0.8
   },
   "audio": {

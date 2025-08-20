@@ -2,8 +2,8 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = 8090;
-const MOBILE_IP = '172.20.10.4';
+const PORT = process.env.PORT || 3002;
+const MOBILE_IP = '0.0.0.0';
 
 app.use(express.static('dashkabot_web'));
 app.use(express.json());

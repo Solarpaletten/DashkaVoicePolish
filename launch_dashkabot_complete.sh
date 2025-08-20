@@ -92,7 +92,7 @@ echo ""
 echo "🚀 Запуск серверов..."
 
 # 1. Запуск AI Server
-echo "🤖 Запуск AI Server на 172.20.10.4:8080..."
+echo "🤖 Запуск AI Server на 0.0.0.0:8080..."
 nohup node ai_server_node.js > logs/ai_server.log 2>&1 &
 AI_PID=$!
 echo $AI_PID > run/ai_server.pid
@@ -108,7 +108,7 @@ else
 fi
 
 # 2. Запуск WebSocket Server
-echo "🔌 Запуск WebSocket Server на 172.20.10.4:8765..."
+echo "🔌 Запуск WebSocket Server на 0.0.0.0:8765..."
 nohup node simple_websocket_server.js > logs/websocket.log 2>&1 &
 WS_PID=$!
 echo $WS_PID > run/websocket.pid
@@ -123,7 +123,7 @@ else
 fi
 
 # 3. Запуск Mobile Web Server
-echo "📱 Запуск Mobile Web Server на 172.20.10.4:8090..."
+echo "📱 Запуск Mobile Web Server на 0.0.0.0:8090..."
 nohup node mobile_web_server.js > logs/mobile_web.log 2>&1 &
 WEB_PID=$!
 echo $WEB_PID > run/web_server.pid
@@ -142,25 +142,25 @@ echo "🔍 Проверка работоспособности серверов.
 
 # Проверка AI Server
 sleep 2
-if curl -s --connect-timeout 5 http://172.20.10.4:8080/health > /dev/null 2>&1; then
-    echo "✅ AI Server отвечает на http://172.20.10.4:8080"
+if curl -s --connect-timeout 5 http://0.0.0.0:8080/health > /dev/null 2>&1; then
+    echo "✅ AI Server отвечает на http://0.0.0.0:8080"
     # Получаем информацию о языках
-    LANG_INFO=$(curl -s http://172.20.10.4:8080/languages 2>/dev/null | grep -o '"count":[0-9]*' | cut -d':' -f2)
+    LANG_INFO=$(curl -s http://0.0.0.0:8080/languages 2>/dev/null | grep -o '"count":[0-9]*' | cut -d':' -f2)
     echo "📊 Поддерживаемые языки: ${LANG_INFO:-'N/A'}"
 else
-    echo "❌ AI Server недоступен на http://172.20.10.4:8080"
+    echo "❌ AI Server недоступен на http://0.0.0.0:8080"
 fi
 
 # Проверка WebSocket
-if curl -s --connect-timeout 5 http://172.20.10.4:8766/health > /dev/null 2>&1; then
-    echo "✅ WebSocket Server отвечает на ws://172.20.10.4:8765"
+if curl -s --connect-timeout 5 http://0.0.0.0:8766/health > /dev/null 2>&1; then
+    echo "✅ WebSocket Server отвечает на ws://0.0.0.0:8765"
 else
     echo "⚠️ WebSocket Server недоступен"
 fi
 
 # Проверка Web Server
-if curl -s --connect-timeout 5 http://172.20.10.4:8090 > /dev/null 2>&1; then
-    echo "✅ Mobile Web Server доступен на http://172.20.10.4:8090"
+if curl -s --connect-timeout 5 http://0.0.0.0:8090 > /dev/null 2>&1; then
+    echo "✅ Mobile Web Server доступен на http://0.0.0.0:8090"
 else
     echo "⚠️ Mobile Web Server недоступен"
 fi
@@ -169,9 +169,9 @@ echo ""
 echo "🎉 DashkaBot Mobile система запущена!"
 echo ""
 echo "🔗 Мобильные URL (для Android APK):"
-echo "   📱 Web Interface: http://172.20.10.4:8090"
-echo "   🤖 AI API: http://172.20.10.4:8080"
-echo "   🔌 WebSocket: ws://172.20.10.4:8765"
+echo "   📱 Web Interface: http://0.0.0.0:8090"
+echo "   🤖 AI API: http://0.0.0.0:8080"
+echo "   🔌 WebSocket: ws://0.0.0.0:8765"
 echo ""
 echo "🔗 Локальные URL (для разработки):"
 echo "   🌐 Web Interface: http://localhost:8090"
@@ -184,12 +184,12 @@ echo "   🛑 Остановить все: pkill -f dashkabot"
 echo "   📋 Логи AI: tail -f logs/ai_server.log"
 echo "   📋 Логи WS: tail -f logs/websocket.log" 
 echo "   📋 Логи Web: tail -f logs/mobile_web.log"
-echo "   🔍 Тест AI: curl http://172.20.10.4:8080/test"
+echo "   🔍 Тест AI: curl http://0.0.0.0:8080/test"
 echo ""
 echo "📱 Android APK:"
 echo "   1. Соберите APK: cd DashkaBotAndroid && ./gradlew assembleDebug"
 echo "   2. Установите на устройство в той же Wi-Fi сети"
-echo "   3. APK подключится к http://172.20.10.4:8090"
+echo "   3. APK подключится к http://0.0.0.0:8090"
 echo ""
 
 # Сохраняем PID для управления

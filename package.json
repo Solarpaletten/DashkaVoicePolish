@@ -1,5 +1,5 @@
 {
-  "name": "dashkabot-ai-server",
+  "name": "dashkabot-english",
   "version": "3.0.0",
   "description": "DashkaBot AI Translation Server with WebSocket support",
   "main": "ai_server_node.js",
