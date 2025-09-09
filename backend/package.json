@@ -1,0 +1,30 @@
+{
+  "name": "dashka-backend-api",
+  "version": "3.0.0",
+  "description": "DashkaBot Voice Polish Translator - Backend API Server by AI IT SOLAR Team",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/server.js",
+    "api": "node src/ai_server_node.js", 
+    "ws": "node src/simple_websocket_server.js",
+    "mobile": "node src/mobile_web_server.js",
+    "test": "node src/index.js",
+    "install-deps": "npm install"
+  },
+  "keywords": ["translator", "polish", "voice", "ai", "websocket"],
+  "author": "AI IT SOLAR Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "ws": "^8.13.0",
+    "openai": "^4.28.0",
+    "dotenv": "^16.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

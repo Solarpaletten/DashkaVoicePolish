@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-dashka text-white font-sans antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg;
+  }
+  
+  .button-primary {
+    @apply bg-dashka-accent hover:bg-dashka-accent/80 text-white font-bold py-3 px-6 rounded-xl;
+    @apply transition-all duration-300 transform hover:scale-105 active:scale-95;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
