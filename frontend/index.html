@@ -444,10 +444,10 @@
         let websocket = null;
         let currentMode = 'text';
 
-        // Конфигурация серверов - ИСПРАВЛЕННЫЕ URL
+        // Конфигурация серверов - PRODUCTION
         const config = {
-            aiServer: import.meta.env.VITE_API_URL || "https://api-dashka-polish.onrender.com",
-            wsServer: (import.meta.env.VITE_API_URL || "https://api-dashka-polish.onrender.com").replace('https://', 'wss://') + '/ws',
+            aiServer: "https://api-dashka-polish.onrender.com",
+            wsServer: "wss://api-dashka-polish.onrender.com/ws",
             enableWebSocket: true,
             enableSpeech: true
         };
