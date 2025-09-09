@@ -154,7 +154,7 @@ class DashkaBotNodeServer {
     this.app.use(express.json({ limit: '10mb' }));
 
     // Статические файлы веб-интерфейса  
-    this.app.use(express.static(path.join(__dirname, 'dashkabot_web')));
+    
     
     // Multer для загрузки аудио файлов
     const upload = multer({
@@ -180,8 +180,21 @@ class DashkaBotNodeServer {
 
   setupRoutes() {
     // ✅ ГЛАВНАЯ СТРАНИЦА - ОТДАЕМ HTML
+    
     this.app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, 'dashkabot_web', 'index.html'));
+      res.json({
+        name: 'DashkaBot API Server',
+        version: '3.0.0',
+        status: 'running',
+        endpoints: [
+          '/health',
+          '/translate', 
+          '/voice-translate',
+          '/languages',
+          '/stats'
+        ],
+        websocket: 'wss://dashka-polish.onrender.com/ws'
+      });
     });
 
     // Health check
