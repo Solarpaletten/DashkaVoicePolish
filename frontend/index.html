@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>🚀 DashkaBot Polish 2.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,7 +91,8 @@
 
         .text-input {
             width: 100%;
-            padding: 15px 45px 15px 15px; /* Отступ справа для кнопок */
+            padding: 15px 45px 15px 15px;
+            /* Отступ справа для кнопок */
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.1);
@@ -137,9 +139,17 @@
             transform: scale(1.1);
         }
 
-        .btn-paste { background: rgba(23, 162, 184, 0.8); }
-        .btn-clear-micro { background: rgba(108, 117, 125, 0.8); }
-        .btn-copy { background: rgba(40, 167, 69, 0.8); }
+        .btn-paste {
+            background: rgba(23, 162, 184, 0.8);
+        }
+
+        .btn-clear-micro {
+            background: rgba(108, 117, 125, 0.8);
+        }
+
+        .btn-copy {
+            background: rgba(40, 167, 69, 0.8);
+        }
 
         /* ✅ ОСНОВНЫЕ КНОПКИ */
         .btn-group {
@@ -236,9 +246,17 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .instruction {
@@ -272,8 +290,13 @@
             margin-right: 5px;
         }
 
-        .connected { background: #2ecc71; }
-        .disconnected { background: #e74c3c; }
+        .connected {
+            background: #2ecc71;
+        }
+
+        .disconnected {
+            background: #e74c3c;
+        }
 
         /* Режимы работы */
         .mode-tabs {
@@ -309,6 +332,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -337,12 +361,8 @@
         <!-- ✅ ИСПРАВЛЕННЫЙ ТЕКСТОВЫЙ РЕЖИМ -->
         <div id="textMode" class="mode-content active">
             <div class="text-input-container">
-                <textarea 
-                    id="textInput" 
-                    class="text-input" 
-                    placeholder="Введите текст для перевода..."
-                ></textarea>
-                
+                <textarea id="textInput" class="text-input" placeholder="Введите текст для перевода..."></textarea>
+
                 <!-- 🎯 ПЛАВАЮЩИЕ КНОПКИ -->
                 <div class="floating-buttons">
                     <button class="micro-btn btn-paste" onclick="pasteText()" title="Вставить">
@@ -375,7 +395,7 @@
                 </button>
                 <div class="instruction">Нажмите для записи</div>
             </div>
-            
+
             <!-- ✅ КНОПКИ И ДЛЯ ГОЛОСОВОГО РЕЖИМА -->
             <div class="btn-group">
                 <button class="btn btn-translate" onclick="translateCurrentText()">
@@ -426,8 +446,8 @@
 
         // Конфигурация серверов - ИСПРАВЛЕННЫЕ URL
         const config = {
-            aiServer: "http://localhost:8080", // Используем текущий домен
-            wsServer: `ws://${window.location.hostname}:8080/ws`, // WebSocket на порту 8765
+            aiServer: import.meta.env.VITE_API_URL || "https://api-dashka-polish.onrender.com",
+            wsServer: (import.meta.env.VITE_API_URL || "https://api-dashka-polish.onrender.com").replace('https://', 'wss://') + '/ws',
             enableWebSocket: true,
             enableSpeech: true
         };
@@ -474,11 +494,11 @@
                 btn.style.background = 'linear-gradient(45deg, #c0392b, #a93226)';
                 isRecording = true;
                 instruction.textContent = 'Говорите... Нажмите ⏹️ для остановки';
-                
+
                 // ✅ СБРАСЫВАЕМ ОБЛАСТИ ТЕКСТА
                 document.getElementById('originalText').textContent = 'Слушаю... Начинайте говорить';
                 document.getElementById('translatedText').textContent = 'Перевод появится после остановки...';
-                
+
             } else {
                 // ⏹️ ОСТАНАВЛИВАЕМ ЗАПИСЬ
                 stopRecording();
@@ -487,12 +507,12 @@
                 btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
                 isRecording = false;
                 instruction.textContent = 'Нажмите для новой записи';
-                
+
                 // ✅ ГОТОВИМ К ПЕРЕВОДУ
                 const recordedText = document.getElementById('originalText').textContent;
                 if (recordedText && recordedText !== 'Слушаю... Начинайте говорить') {
                     updateStatus('✅ Запись остановлена. Нажмите "Перевести" или подождите...');
-                    
+
                     // Автоперевод через 3 секунды
                     setTimeout(() => {
                         if (!isRecording && recordedText === document.getElementById('originalText').textContent) {
@@ -507,7 +527,7 @@
 
         function startRecording() {
             updateStatus('🎤 Запись началась... Говорите сколько угодно времени');
-            
+
             try {
                 recognition.start();
             } catch (error) {
@@ -549,7 +569,7 @@
                 textInput.value = text;
                 textInput.focus();
                 updateStatus('📋 Текст вставлен из буфера обмена');
-                
+
                 // Мини-анимация кнопки
                 const btn = event.target;
                 btn.style.transform = 'scale(1.2)';
@@ -563,7 +583,7 @@
         function clearTextInput() {
             document.getElementById('textInput').value = '';
             updateStatus('🗑️ Поле ввода очищено');
-            
+
             // Мини-анимация кнопки
             const btn = event.target;
             btn.style.transform = 'scale(1.2)';
@@ -576,7 +596,7 @@
                 try {
                     await navigator.clipboard.writeText(resultText);
                     updateStatus('📄 Перевод скопирован в буфер обмена');
-                    
+
                     // Визуальная обратная связь
                     const btn = event.target;
                     btn.style.background = 'rgba(40, 167, 69, 1)';
@@ -599,14 +619,14 @@
             // Получаем текст из поля ввода или из распознанного текста
             const textFromInput = document.getElementById('textInput').value.trim();
             const textFromOriginal = document.getElementById('originalText').textContent;
-            
+
             let text = '';
             if (currentMode === 'text' && textFromInput) {
                 text = textFromInput;
             } else if (textFromOriginal && textFromOriginal !== 'Введите текст или нажмите на микрофон...') {
                 text = textFromOriginal;
             }
-            
+
             if (!text) {
                 updateStatus('❌ Нет текста для перевода');
                 return;
@@ -714,7 +734,7 @@
             } catch (error) {
                 updateConnectionStatus('ai', false);
                 console.error('❌ AI Server not available:', error);
-                
+
                 // Пробуем альтернативные endpoints
                 try {
                     const altResponse = await fetch(`${config.aiServer}/health`);
@@ -775,7 +795,7 @@
             recognition.continuous = true;        // Непрерывная запись ✅
             recognition.interimResults = true;    // Промежуточные результаты ✅
             recognition.maxAlternatives = 1;      // Один вариант распознавания
-            
+
             recognition.onstart = function () {
                 updateConnectionStatus('speech', true);
                 console.log('🎤 Speech recognition started - CONTINUOUS MODE');
@@ -806,13 +826,13 @@
 
             recognition.onerror = function (event) {
                 console.error('Speech recognition error:', event.error);
-                
+
                 //НЕ ОСТАНАВЛИВАЕМ ПРИ НЕЗНАЧИТЕЛЬНЫХ ОШИБКАХ
                 if (event.error === 'no-speech' || event.error === 'audio-capture') {
                     updateStatus('🔇 Не слышу речь... Продолжайте говорить');
                     return; // Не останавливаем запись
                 }
-                
+
                 updateStatus(`❌ Ошибка: ${event.error}`);
                 stopRecording();
             };
@@ -938,13 +958,13 @@
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = language === 'de' ? 'de-DE' :
                 language === 'en' ? 'en-US' :
-                language === 'es' ? 'es-ES' :
-                language === 'pl' ? 'pl-PL' :
-                language === 'cs' ? 'cs-CZ' :
-                language === 'lt' ? 'lt-LT' :
-                language === 'lv' ? 'lv-LV' :
-                language === 'no' ? 'no-NO' :
-                'ru-RU';
+                    language === 'es' ? 'es-ES' :
+                        language === 'pl' ? 'pl-PL' :
+                            language === 'cs' ? 'cs-CZ' :
+                                language === 'lt' ? 'lt-LT' :
+                                    language === 'lv' ? 'lv-LV' :
+                                        language === 'no' ? 'no-NO' :
+                                            'ru-RU';
             utterance.rate = 0.8;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
@@ -1010,4 +1030,5 @@
         });
     </script>
 </body>
+
 </html>
