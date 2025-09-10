@@ -2,20 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-gradient-dashka text-white font-sans antialiased min-h-screen;
-  }
+/* Кастомные стили для glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-@layer components {
-  .glass-card {
-    @apply bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg;
-  }
-  
-  .button-primary {
-    @apply bg-dashka-accent hover:bg-dashka-accent/80 text-white font-bold py-3 px-6 rounded-xl;
-    @apply transition-all duration-300 transform hover:scale-105 active:scale-95;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-  }
+/* ИСПРАВЛЕНИЕ: Темный текст на светлых полях ввода */
+.input-field {
+  @apply bg-white/90 text-gray-900 placeholder-gray-500;
+  @apply border border-white/30 rounded-xl px-4 py-3;
+  @apply focus:outline-none focus:ring-2 focus:ring-white/50;
+}
+
+/* Темный текст в textarea */
+.textarea-field {
+  @apply bg-white/90 text-gray-900 placeholder-gray-500;
+  @apply border border-white/30 rounded-xl px-4 py-3;
+  @apply focus:outline-none focus:ring-2 focus:ring-white/50;
+  @apply resize-none;
+}
+
+/* Результат перевода - светлый фон с темным текстом */
+.translation-result {
+  @apply bg-white/95 text-gray-800 rounded-xl p-4 min-h-[80px];
+  @apply border border-white/30;
+}
+
+/* Кнопки с улучшенным контрастом */
+.btn-primary {
+  @apply bg-green-500 hover:bg-green-600 text-white font-semibold;
+  @apply px-6 py-3 rounded-xl transition-colors duration-200;
+  @apply shadow-lg hover:shadow-xl;
+}
+
+.btn-secondary {
+  @apply bg-white/20 hover:bg-white/30 text-white font-semibold;
+  @apply px-6 py-3 rounded-xl transition-colors duration-200;
+  @apply border border-white/30 backdrop-blur-sm;
+}
+
+/* Селекторы языков */
+.language-btn {
+  @apply px-4 py-3 rounded-xl font-semibold transition-all duration-200;
+  @apply border-2 backdrop-blur-sm;
+}
+
+.language-btn.active {
+  @apply bg-white/90 text-gray-900 border-white/50;
+}
+
+.language-btn.inactive {
+  @apply bg-white/10 text-white border-white/30;
+  @apply hover:bg-white/20;
+}
+
+/* Статус индикаторы */
+.status-indicator {
+  @apply flex items-center gap-2 text-sm font-medium;
+}
+
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-connected {
+  @apply bg-green-400;
+}
+
+.status-disconnected {
+  @apply bg-red-400;
 }
