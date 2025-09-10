@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { currentLanguageConfig } from '../../config/currentLanguage';
 
-interface DashboardProps {}
+interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
   // State управление
@@ -80,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     try {
       const ws = new WebSocket(config.wsServer);
-      
+
       ws.onopen = () => {
         setConnectionStatus(prev => ({ ...prev, ws: true }));
         console.log('WebSocket connected');
@@ -151,12 +151,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
-      
+
       if (event.error === 'no-speech' || event.error === 'audio-capture') {
         setStatus('🔇 Не слышу речь... Продолжайте говорить');
         return;
       }
-      
+
       setStatus(`❌ Ошибка: ${event.error}`);
       stopRecording();
     };
@@ -208,6 +208,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       setTranslatedText(translation);
       setStatus(`✅ Переведено! (${fromLang} → ${toLang})`);
+
+      // В конце performTranslation после успешного перевода
+      // Добавить озвучивание перевода
+      const targetLang = toLang.toLowerCase();
+      speakTranslation(translation, targetLang);
 
       // WebSocket message
       if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
@@ -366,10 +371,44 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   };
 
+  const speakTranslation = (text: string, language: string) => {
+    if (!('speechSynthesis' in window)) return;
+  
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+  
+    // Настройка языка
+    utterance.lang = language === 'pl' ? 'pl-PL' : 'ru-RU';
+  
+    // Попытка найти подходящий голос по полу
+    const voices = speechSynthesis.getVoices();
+    const preferredGender = language === 'pl' ? 'male' : 'female';
+    const selectedVoice = voices.find(voice =>
+      voice.lang.includes(language) &&
+      voice.name.toLowerCase().includes(preferredGender)
+    ) || voices.find(voice => voice.lang.includes(language));
+  
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+  
+    // Дополнительная настройка тона
+    if (language === 'pl') {
+      utterance.pitch = 0.8;
+      utterance.rate = 0.9;
+    } else {
+      utterance.pitch = 1.2;
+      utterance.rate = 0.8;
+    }
+  
+    utterance.volume = 1.0;
+    speechSynthesis.speak(utterance);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-teal-600 p-4">
       <div className="max-w-md mx-auto glass rounded-3xl p-8 shadow-2xl">
-        
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -399,21 +438,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
         {/* Mode Tabs */}
         <div className="flex mb-6 bg-black/20 rounded-xl p-1">
           <button
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-              currentMode === 'text' 
-                ? 'bg-white/20 text-white' 
-                : 'text-white/70 hover:text-white'
-            }`}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${currentMode === 'text'
+              ? 'bg-white/20 text-white'
+              : 'text-white/70 hover:text-white'
+              }`}
             onClick={() => setCurrentMode('text')}
           >
             📝 Текст
           </button>
           <button
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-              currentMode === 'voice' 
-                ? 'bg-white/20 text-white' 
-                : 'text-white/70 hover:text-white'
-            }`}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${currentMode === 'voice'
+              ? 'bg-white/20 text-white'
+              : 'text-white/70 hover:text-white'
+              }`}
             onClick={() => setCurrentMode('voice')}
           >
             🎤 Голос
@@ -440,7 +477,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   }
                 }}
               />
-              
+
               {/* Floating buttons */}
               <div className="absolute right-2 top-2 flex flex-col gap-1">
                 <button
@@ -490,11 +527,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
           <div className="space-y-6 mb-6">
             <div className="text-center">
               <button
-                className={`w-32 h-32 rounded-full border-none text-4xl cursor-pointer transition-all text-white shadow-lg ${
-                  isRecording 
-                    ? 'bg-gradient-to-br from-red-600 to-red-700 animate-pulse' 
-                    : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
-                } ${isRecording ? '' : 'hover:scale-105'} active:scale-95`}
+                className={`w-32 h-32 rounded-full border-none text-4xl cursor-pointer transition-all text-white shadow-lg ${isRecording
+                  ? 'bg-gradient-to-br from-red-600 to-red-700 animate-pulse'
+                  : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                  } ${isRecording ? '' : 'hover:scale-105'} active:scale-95`}
                 onClick={toggleRecording}
                 disabled={!recognitionRef.current}
               >
@@ -544,7 +580,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         <div className="bg-black/20 p-4 rounded-xl text-center text-white text-sm">
           <div className="font-bold mb-2">Samsung Galaxy S24</div>
           <div className="mb-3">Подключен через Wi-Fi</div>
-          
+
           <div className="flex justify-between text-xs">
             <div className="status-indicator">
               <span className={`status-dot ${connectionStatus.ai ? 'status-connected' : 'status-disconnected'}`}></span>
